@@ -39,7 +39,9 @@ t 403 "unknown label (fail closed)" $U -H "Authorization: Bearer $A" -d "$UNK"
 t 401 "wrong audience" $U -H "Authorization: Bearer $X" -d "$P"
 t 401 "wrong issuer" $U -H "Authorization: Bearer $E" -d "$P"
 t 401 "expired token" $U -H "Authorization: Bearer $OLD" -d "$P"
-t 401 "tampered token" $U -H "Authorization: Bearer ${A%?}x" -d "$P"
+SIG=${A##*.}; [ "${SIG:0:1}" = A ] && FIRST=B || FIRST=A
+TAMPERED="${A%.*}.$FIRST${SIG:1}"      # first signature character: always a different signature
+t 401 "tampered token" $U -H "Authorization: Bearer $TAMPERED" -d "$P"
 curl -s localhost:8080/v1/models -H "Authorization: Bearer $B" | grep -q '"data": \[\]' && echo "PASS bob sees no models" || { echo "FAIL bob model list"; fail=1; }
 
 echo "--- delegation: authority narrows"

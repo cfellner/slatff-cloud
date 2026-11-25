@@ -8,3 +8,6 @@ logs/
 # Your own Apple team and bundle IDs; copy from the .example file
 caddy/well-known/apple-app-site-association
 *.bak
+__pycache__/
+*.pyc
+*.tmp
