@@ -1,0 +1,16 @@
+{
+  "_comment": "Who may use which model, which document labels, and which tools. Roles are Keycloak realm roles. Unknown labels are refused. Tools get a token exchanged at Keycloak that is only valid for that tool (audience) and scope. Edit and save: the gateway reloads this file on the next request.",
+  "models": {
+    "llama3.2:1b": {"roles": ["ai-user", "ai-admin"]},
+    "llama3.2:3b": {"roles": ["ai-user", "ai-admin"]}
+  },
+  "labels": {
+    "PUBLIC":     {"roles": ["ai-user", "ai-admin"]},
+    "STAFF":      {"roles": ["ai-user", "ai-admin"]},
+    "BOARD-ONLY": {"roles": ["ai-admin"]}
+  },
+  "tools": {
+    "kb-search": {"roles": ["ai-user", "ai-admin"], "audience": "kb-tool", "scope": "kb-search",
+                  "url": "http://kb-tool:8080/search"}
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "authsrv": {
+    "apps": ["TEAMID.your.bundle.id.ssoe"]
+  },
+  "webcredentials": {
+    "apps": ["TEAMID.your.bundle.id"]
+  }
+}

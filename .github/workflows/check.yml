@@ -1,0 +1,49 @@
+# Static checks on every push and pull request. Starts no services.
+name: check
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  static:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Shell scripts parse and pass shellcheck (errors)
+        run: |
+          for f in scripts/*.sh; do bash -n "$f"; done
+          shellcheck -S error scripts/*.sh
+      - name: Realm file is valid JSON
+        run: python3 -m json.tool keycloak/realm-slatff.json > /dev/null
+      - name: bootstrap.sh writes .env
+        run: ./scripts/bootstrap.sh example.org && test -f .env
+      - name: Model gateway and delegation tests (fake Keycloak, fake model, kb-tool, 28 checks)
+        run: |
+          pip install --quiet "aiohttp>=3.9,<4" "PyJWT[crypto]>=2.8,<3"
+          bash model-gateway/tests/run.sh
+      - name: IDE bridge tests (fake Keycloak device flow, both API styles, refresh, revocation)
+        run: bash ide-bridge/tests/run.sh
+      - name: Compose file is valid with every profile
+        env:
+          CLOUDFLARE_API_TOKEN: placeholder-for-config-check
+        run: |
+          docker compose config -q
+          for p in meet files tunnel ollama-container; do docker compose --profile "$p" config -q; done
+      - name: No secrets committed
+        run: |
+          ! git ls-files | grep -E '(^|/)\.env$'
+
+  bridge-secret-store:
+    name: IDE bridge secret store (${{ matrix.os }})
+    strategy:
+      matrix:
+        os: [windows-latest, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: save, load and delete a token in the OS secret store
+        run: python ide-bridge/bridge.py selftest-store

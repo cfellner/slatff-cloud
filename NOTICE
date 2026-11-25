@@ -1,0 +1,24 @@
+SLATFF.Cloud
+Copyright 2026 Christoph Fellner
+
+Licensed under the Apache License, Version 2.0.
+
+This repository contains configuration and documentation only. It does not include or
+redistribute the software it configures:
+
+  Keycloak (Apache-2.0)                    https://www.keycloak.org
+  PostgreSQL (PostgreSQL License)          https://www.postgresql.org
+  Caddy (Apache-2.0)                       https://caddyserver.com
+  caddy-dns/cloudflare (see its repository) https://github.com/caddy-dns/cloudflare
+  Ollama (MIT)                             https://github.com/ollama/ollama
+  Open WebUI (see its repository)          https://github.com/open-webui/open-webui
+  Jitsi Meet container images (Apache-2.0) https://github.com/jitsi/docker-jitsi-meet
+  jitsi-keycloak-adapter-v2, Nordeck (Apache-2.0)
+    https://github.com/nordeck/jitsi-keycloak-adapter-v2
+
+Referenced but not included:
+
+  keycloak-psso-extension, University of Oslo (GPL-2.0-or-later)
+    https://github.com/unioslo/keycloak-psso-extension
+  weblogin-mac-sso-extension, University of Oslo (Apache-2.0)
+    https://github.com/unioslo/weblogin-mac-sso-extension

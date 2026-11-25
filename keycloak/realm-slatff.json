@@ -1,0 +1,189 @@
+{
+  "realm": "slatff",
+  "displayName": "SLATFF.Cloud",
+  "enabled": true,
+  "registrationAllowed": false,
+  "resetPasswordAllowed": false,
+  "bruteForceProtected": true,
+  "sslRequired": "external",
+  "roles": {
+    "realm": [
+      {
+        "name": "ai-user",
+        "description": "May sign in to the AI workspace"
+      },
+      {
+        "name": "ai-admin",
+        "description": "May administer the AI workspace"
+      },
+      {
+        "name": "files-user",
+        "description": "May sign in to Files (Nextcloud)"
+      }
+    ]
+  },
+  "groups": [
+    {
+      "name": "ai-users",
+      "realmRoles": [
+        "ai-user"
+      ]
+    },
+    {
+      "name": "ai-admins",
+      "realmRoles": [
+        "ai-admin",
+        "ai-user"
+      ]
+    },
+    {
+      "name": "files-users",
+      "realmRoles": [
+        "files-user"
+      ]
+    }
+  ],
+  "clients": [
+    {
+      "clientId": "open-webui",
+      "name": "Open WebUI",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "${OPEN_WEBUI_CLIENT_SECRET}",
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": false,
+      "implicitFlowEnabled": false,
+      "serviceAccountsEnabled": false,
+      "redirectUris": [
+        "https://${AI_HOST}/oauth/oidc/callback"
+      ],
+      "webOrigins": [
+        "https://${AI_HOST}"
+      ],
+      "defaultClientScopes": [
+        "web-origins",
+        "profile",
+        "roles",
+        "email",
+        "basic"
+      ],
+      "optionalClientScopes": [],
+      "protocolMappers": [
+        {
+          "name": "groups",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-group-membership-mapper",
+          "config": {
+            "claim.name": "groups",
+            "full.path": "false",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "userinfo.token.claim": "true"
+          }
+        },
+        {
+          "name": "realm roles flat",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-realm-role-mapper",
+          "config": {
+            "claim.name": "roles",
+            "multivalued": "true",
+            "jsonType.label": "String",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "userinfo.token.claim": "true"
+          }
+        },
+        {
+          "name": "audience model-gateway",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "config": {
+            "included.custom.audience": "model-gateway",
+            "access.token.claim": "true",
+            "id.token.claim": "false"
+          }
+        }
+      ],
+      "attributes": {
+        "post.logout.redirect.uris": "https://${AI_HOST}/*"
+      }
+    },
+    {
+      "clientId": "jitsi",
+      "name": "Jitsi Meet",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "${JITSI_CLIENT_SECRET}",
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": false,
+      "implicitFlowEnabled": false,
+      "serviceAccountsEnabled": false,
+      "redirectUris": [
+        "https://${MEET_HOST}/oidc/tokenize"
+      ],
+      "webOrigins": [
+        "https://${MEET_HOST}"
+      ],
+      "defaultClientScopes": [
+        "web-origins",
+        "profile",
+        "roles",
+        "email",
+        "basic"
+      ],
+      "optionalClientScopes": [],
+      "attributes": {
+        "post.logout.redirect.uris": "https://${MEET_HOST}/*"
+      }
+    },
+    {
+      "clientId": "nextcloud",
+      "name": "Files (Nextcloud)",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "${NEXTCLOUD_CLIENT_SECRET}",
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": false,
+      "implicitFlowEnabled": false,
+      "serviceAccountsEnabled": false,
+      "redirectUris": [
+        "https://${FILES_HOST}/apps/user_oidc/code"
+      ],
+      "webOrigins": [
+        "https://${FILES_HOST}"
+      ],
+      "attributes": {
+        "post.logout.redirect.uris": "https://${FILES_HOST}/*"
+      },
+      "defaultClientScopes": [
+        "web-origins",
+        "profile",
+        "roles",
+        "email",
+        "basic"
+      ],
+      "optionalClientScopes": [],
+      "protocolMappers": [
+        {
+          "name": "groups",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-group-membership-mapper",
+          "config": {
+            "claim.name": "groups",
+            "full.path": "false",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "userinfo.token.claim": "true"
+          }
+        }
+      ]
+    }
+  ]
+}

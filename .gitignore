@@ -1,0 +1,10 @@
+.env
+.env.bak
+keycloak/providers/*.jar
+keycloak/providers/*.sig
+*.log
+logs/
+.DS_Store
+# Your own Apple team and bundle IDs; copy from the .example file
+caddy/well-known/apple-app-site-association
+*.bak

@@ -1,0 +1,339 @@
+# SLATFF.Cloud: a small sovereign server for a small business.
+# One login (Keycloak) in front of an AI workspace (Open WebUI + a local model) and,
+# optionally, video meetings (Jitsi). Caddy is the only service with a published web port.
+# Development configuration. Meant for your own network, not for the internet.
+name: slatff
+
+services:
+  postgres:
+    image: postgres:${POSTGRES_VERSION:-17}
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: keycloak
+      POSTGRES_USER: keycloak
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?run ./scripts/bootstrap.sh first}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U keycloak -d keycloak"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:${KEYCLOAK_VERSION:-26.5}
+    restart: unless-stopped
+    command: ["start-dev", "--import-realm"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${KC_BOOTSTRAP_ADMIN_USERNAME:-admin}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KC_BOOTSTRAP_ADMIN_PASSWORD:?run ./scripts/bootstrap.sh first}
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak
+      KC_DB_USERNAME: keycloak
+      KC_DB_PASSWORD: ${POSTGRES_PASSWORD}
+      # Public address, served by Caddy over HTTPS. Keycloak itself speaks plain HTTP
+      # inside the Docker network and trusts Caddy's X-Forwarded headers.
+      KC_HOSTNAME: https://${ID_HOST:?run ./scripts/bootstrap.sh first}
+      KC_PROXY_HEADERS: xforwarded
+      KC_HTTP_ENABLED: "true"
+      # Keycloak refuses an empty feature list, so an empty KC_FEATURES falls back to a
+      # feature that is on by default anyway (no change in behaviour).
+      KC_FEATURES: ${KC_FEATURES:-persistent-user-sessions}
+      # Read by the realm import file as ${...} placeholders.
+      # The realm is imported once: later changes mean editing the clients in the admin console.
+      OPEN_WEBUI_CLIENT_SECRET: ${OPEN_WEBUI_CLIENT_SECRET:?run ./scripts/bootstrap.sh first}
+      JITSI_CLIENT_SECRET: ${JITSI_CLIENT_SECRET:?run ./scripts/bootstrap.sh first}
+      AI_HOST: ${AI_HOST:?run ./scripts/bootstrap.sh first}
+      MEET_HOST: ${MEET_HOST:?run ./scripts/bootstrap.sh first}
+      FILES_HOST: ${FILES_HOST:?add FILES_HOST to .env, see .env.example}
+      NEXTCLOUD_CLIENT_SECRET: ${NEXTCLOUD_CLIENT_SECRET:?add NEXTCLOUD_CLIENT_SECRET to .env, see .env.example}
+    volumes:
+      - ./keycloak/realm-slatff.json:/opt/keycloak/data/import/realm-slatff.json:ro
+      - ./keycloak/providers:/opt/keycloak/providers
+    # No published port. Reach it through Caddy at https://ID_HOST.
+
+  caddy:
+    build: ./caddy
+    restart: unless-stopped
+    ports:
+      - "443:443"
+    environment:
+      CLOUDFLARE_API_TOKEN: ${CLOUDFLARE_API_TOKEN:?add a Cloudflare DNS token to .env, see docs/NETWORK.md}
+      ID_HOST: ${ID_HOST}
+      AI_HOST: ${AI_HOST}
+      MEET_HOST: ${MEET_HOST}
+      FILES_HOST: ${FILES_HOST}
+    volumes:
+      - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./caddy/well-known:/srv/well-known:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    # Inside the Docker network the public names point at Caddy, so containers and
+    # browsers use the same URLs and the same certificates.
+    networks:
+      default:
+        aliases:
+          - ${ID_HOST}
+          - ${AI_HOST}
+          - ${MEET_HOST}
+          - ${FILES_HOST}
+
+  open-webui:
+    image: ghcr.io/open-webui/open-webui:${OPEN_WEBUI_TAG:-main}
+    restart: unless-stopped
+    depends_on:
+      - keycloak
+      - caddy
+      - model-gateway
+    environment:
+      WEBUI_URL: https://${AI_HOST}
+      WEBUI_SECRET_KEY: ${WEBUI_SECRET_KEY:?run ./scripts/bootstrap.sh first}
+      # Models are reached only through the SLATFF model gateway, never Ollama directly.
+      # The gateway receives each user's own Keycloak access token ("system_oauth") and
+      # decides per request (docs/MODEL-GATEWAY.md).
+      ENABLE_OLLAMA_API: "false"
+      ENABLE_OPENAI_API: "true"
+      OPENAI_API_BASE_URLS: http://model-gateway:8080/v1
+      OPENAI_API_KEYS: ""
+      OPENAI_API_CONFIGS: '{"0": {"enable": true, "auth_type": "system_oauth"}}'
+      ENABLE_FORWARD_USER_INFO_HEADERS: "true"
+      # Sign-in only through Keycloak. Local sign-up and the password form are off.
+      ENABLE_SIGNUP: "false"
+      # Keep chats on this server: no sharing to the public Open WebUI community site.
+      ENABLE_COMMUNITY_SHARING: "false"
+      ENABLE_LOGIN_FORM: "false"
+      OAUTH_AUTO_REDIRECT: "true"
+      ENABLE_OAUTH_SIGNUP: "true"
+      OAUTH_PROVIDER_NAME: SLATFF.Cloud
+      OAUTH_CLIENT_ID: open-webui
+      OAUTH_CLIENT_SECRET: ${OPEN_WEBUI_CLIENT_SECRET}
+      OPENID_PROVIDER_URL: https://${ID_HOST}/realms/slatff/.well-known/openid-configuration
+      OPENID_REDIRECT_URI: https://${AI_HOST}/oauth/oidc/callback
+      OAUTH_SCOPES: openid email profile
+      # Access is decided in the identity provider: realm roles gate login and admin rights.
+      ENABLE_OAUTH_ROLE_MANAGEMENT: "true"
+      OAUTH_ROLES_CLAIM: roles
+      OAUTH_ALLOWED_ROLES: ai-user,ai-admin
+      OAUTH_ADMIN_ROLES: ai-admin
+      # Keycloak groups become Open WebUI groups at each login.
+      ENABLE_OAUTH_GROUP_MANAGEMENT: "true"
+      ENABLE_OAUTH_GROUP_CREATION: "true"
+      OAUTH_GROUPS_CLAIM: groups
+    volumes:
+      - open-webui-data:/app/backend/data
+    # No published port. Reach it through Caddy at https://AI_HOST.
+
+  # Model gateway: the access decision at the model boundary (docs/MODEL-GATEWAY.md).
+  model-gateway:
+    build: ./model-gateway
+    restart: unless-stopped
+    depends_on:
+      - caddy
+    # The model runs natively on the host (GPU access). On Linux this line makes
+    # host.docker.internal resolve; Docker Desktop on a Mac provides it already.
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      UPSTREAM_URL: ${MODEL_UPSTREAM_URL:-http://host.docker.internal:11434/v1}
+      OIDC_ISSUER: https://${ID_HOST}/realms/slatff
+      GATEWAY_AUDIENCE: model-gateway
+      AUDIT_LOG_PROMPTS: ${GATEWAY_AUDIT_LOG_PROMPTS:-false}
+      # Delegation (docs/DELEGATION.md): the gateway's own Keycloak client secret, used
+      # only for token exchange. Empty = tool calls are refused (503).
+      GATEWAY_CLIENT_SECRET: ${GATEWAY_CLIENT_SECRET:-}
+    volumes:
+      - ./model-gateway/policy.json:/config/policy.json:ro
+      - gateway-audit:/audit
+    # No published port. Only containers on this network reach it.
+
+  # Demo tool for delegation (docs/DELEGATION.md): searches the fictional knowledge base.
+  # Accepts only tokens exchanged for it (audience kb-tool, scope kb-search).
+  kb-tool:
+    build: ./kb-tool
+    restart: unless-stopped
+    environment:
+      OIDC_ISSUER: https://${ID_HOST}/realms/slatff
+    volumes:
+      - ./demo/knowledge:/docs:ro
+      - ./model-gateway/policy.json:/config/policy.json:ro
+      - kb-tool-audit:/audit
+    # No published port. Only the gateway (and other containers here) reach it.
+
+  # Optional: model in a container, for hosts where a native Ollama is not wanted
+  # (Linux with a GPU runtime, or CPU only). On a Mac a container cannot use the GPU.
+  # Start with: docker compose --profile ollama-container up -d
+  # and set MODEL_UPSTREAM_URL=http://ollama:11434/v1 in .env.
+  ollama:
+    profiles: ["ollama-container"]
+    image: ollama/ollama:${OLLAMA_TAG:-latest}
+    restart: unless-stopped
+    volumes:
+      - ollama-data:/root/.ollama
+
+  # --- Optional: files, calendar and contacts (see docs/FILES.md) ----------------
+  # Start with: docker compose --profile files up -d, then ./scripts/setup-files.sh
+  nextcloud-db:
+    profiles: ["files"]
+    image: postgres:${POSTGRES_VERSION:-17}
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: nextcloud
+      POSTGRES_USER: nextcloud
+      POSTGRES_PASSWORD: ${NEXTCLOUD_DB_PASSWORD:-}
+    volumes:
+      - nextcloud-db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nextcloud -d nextcloud"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  nextcloud:
+    profiles: ["files"]
+    image: nextcloud:${NEXTCLOUD_TAG:-32-apache}
+    restart: unless-stopped
+    depends_on:
+      nextcloud-db:
+        condition: service_healthy
+    environment:
+      POSTGRES_HOST: nextcloud-db
+      POSTGRES_DB: nextcloud
+      POSTGRES_USER: nextcloud
+      POSTGRES_PASSWORD: ${NEXTCLOUD_DB_PASSWORD:-}
+      # Break-glass local administrator. Everyone else signs in through Keycloak.
+      NEXTCLOUD_ADMIN_USER: ncadmin
+      NEXTCLOUD_ADMIN_PASSWORD: ${NEXTCLOUD_ADMIN_PASSWORD:-}
+      NEXTCLOUD_TRUSTED_DOMAINS: ${FILES_HOST}
+      OVERWRITEPROTOCOL: https
+      OVERWRITEHOST: ${FILES_HOST}
+      OVERWRITECLIURL: https://${FILES_HOST}
+      TRUSTED_PROXIES: 172.16.0.0/12 192.168.0.0/16 10.0.0.0/8
+      PHP_UPLOAD_LIMIT: 2G
+    volumes:
+      - nextcloud-data:/var/www/html
+    # No published port. Reach it through Caddy at https://FILES_HOST.
+
+  # --- Optional: remote access through a Cloudflare tunnel (docs/REMOTE-ACCESS.md) --
+  # Start with: docker compose --profile tunnel up -d
+  cloudflared:
+    profiles: ["tunnel"]
+    image: cloudflare/cloudflared:${CLOUDFLARED_TAG:-latest}
+    restart: unless-stopped
+    command: ["tunnel", "--no-autoupdate", "run"]
+    environment:
+      TUNNEL_TOKEN: ${CLOUDFLARE_TUNNEL_TOKEN:-}
+    depends_on:
+      - caddy
+
+  # --- Optional: video meetings (experimental, see docs/MEET.md) -----------------
+  # Start with: docker compose --profile meet up -d
+  jitsi-web:
+    profiles: ["meet"]
+    image: jitsi/web:${JITSI_TAG:-stable-10532-1}
+    restart: unless-stopped
+    depends_on:
+      - jitsi-prosody
+    environment:
+      PUBLIC_URL: https://${MEET_HOST}
+      DISABLE_HTTPS: "1"
+      ENABLE_HTTP_REDIRECT: "0"
+      ENABLE_LETSENCRYPT: "0"
+      ENABLE_AUTH: "true"
+      AUTH_TYPE: jwt
+      ENABLE_GUESTS: "true"
+      TOKEN_AUTH_URL: https://${MEET_HOST}/oidc/auth?state={state}
+      TZ: ${TZ:-Europe/London}
+    volumes:
+      - jitsi-web:/config
+
+  jitsi-prosody:
+    profiles: ["meet"]
+    image: jitsi/prosody:${JITSI_TAG:-stable-10532-1}
+    restart: unless-stopped
+    environment:
+      PUBLIC_URL: https://${MEET_HOST}
+      ENABLE_AUTH: "true"
+      AUTH_TYPE: jwt
+      ENABLE_GUESTS: "true"
+      JWT_APP_ID: slatff
+      JWT_APP_SECRET: ${JITSI_JWT_SECRET:-}
+      XMPP_MODULES: persistent_lobby
+      XMPP_MUC_MODULES: muc_wait_for_host
+      JICOFO_AUTH_PASSWORD: ${JICOFO_AUTH_PASSWORD:-}
+      JVB_AUTH_PASSWORD: ${JVB_AUTH_PASSWORD:-}
+      TZ: ${TZ:-Europe/London}
+    volumes:
+      - jitsi-prosody:/config
+    networks:
+      default:
+        aliases:
+          - xmpp.meet.jitsi
+
+  jitsi-jicofo:
+    profiles: ["meet"]
+    image: jitsi/jicofo:${JITSI_TAG:-stable-10532-1}
+    restart: unless-stopped
+    depends_on:
+      - jitsi-prosody
+    environment:
+      ENABLE_AUTH: "true"
+      AUTH_TYPE: jwt
+      JICOFO_ENABLE_AUTH: "false"
+      JICOFO_AUTH_PASSWORD: ${JICOFO_AUTH_PASSWORD:-}
+      TZ: ${TZ:-Europe/London}
+    volumes:
+      - jitsi-jicofo:/config
+
+  jitsi-jvb:
+    profiles: ["meet"]
+    image: jitsi/jvb:${JITSI_TAG:-stable-10532-1}
+    restart: unless-stopped
+    depends_on:
+      - jitsi-prosody
+    ports:
+      - "10000:10000/udp"
+    environment:
+      JVB_AUTH_PASSWORD: ${JVB_AUTH_PASSWORD:-}
+      JVB_PORT: "10000"
+      # The address other devices use to reach this machine for video.
+      JVB_ADVERTISE_IPS: ${LAN_IP:-}
+      TZ: ${TZ:-Europe/London}
+    volumes:
+      - jitsi-jvb:/config
+
+  # Turns a Keycloak sign-in into the token Jitsi expects.
+  # Upstream publishes no version tags in its Docker guide; pin a digest once it works for you.
+  jitsi-adapter:
+    profiles: ["meet"]
+    image: ghcr.io/nordeck/jitsi-keycloak-adapter-v2
+    restart: unless-stopped
+    depends_on:
+      - keycloak
+      - caddy
+    environment:
+      KEYCLOAK_ORIGIN: https://${ID_HOST}
+      KEYCLOAK_ORIGIN_INTERNAL: ""
+      KEYCLOAK_REALM: slatff
+      KEYCLOAK_CLIENT_ID: jitsi
+      KEYCLOAK_CLIENT_SECRET: ${JITSI_CLIENT_SECRET}
+      JWT_APP_ID: slatff
+      JWT_APP_SECRET: ${JITSI_JWT_SECRET:-}
+      ALLOW_UNSECURE_CERT: "false"
+
+volumes:
+  postgres-data:
+  ollama-data:
+  open-webui-data:
+  caddy-data:
+  caddy-config:
+  jitsi-web:
+  jitsi-prosody:
+  jitsi-jicofo:
+  jitsi-jvb:
+  nextcloud-db:
+  nextcloud-data:
+  gateway-audit:
+  kb-tool-audit:
