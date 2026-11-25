@@ -1,0 +1,35 @@
+# Step 8, app-to-app access (docs/APP-TO-APP.md): build the Keycloak ID-JAG issuer extension
+# against Keycloak 26.8.2 and run the offline tests of the demo client and notes API.
+name: app-to-app
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  id-jag-issuer:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+          cache-dependency-path: keycloak/extensions/id-jag-issuer/pom.xml
+      - name: Build the extension
+        run: mvn -B -q -f keycloak/extensions/id-jag-issuer/pom.xml package
+      - name: Jar contains the provider and its service file
+        run: |
+          unzip -l keycloak/extensions/id-jag-issuer/target/slatff-id-jag-issuer.jar | grep -q IdJagTokenExchangeProvider.class
+          unzip -p keycloak/extensions/id-jag-issuer/target/slatff-id-jag-issuer.jar \
+            META-INF/services/org.keycloak.protocol.oidc.TokenExchangeProviderFactory | grep -q IdJagTokenExchangeProviderFactory
+
+  demo-client:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Offline tests (fake IdP and app B, real notes API)
+        run: |
+          pip install --quiet "aiohttp>=3.9,<4" "PyJWT[crypto]>=2.8,<3"
+          bash app-to-app/tests/run.sh

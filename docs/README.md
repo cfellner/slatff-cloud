@@ -20,6 +20,7 @@ Read in this order.
 | [MODEL-GATEWAY.md](MODEL-GATEWAY.md) | Token check, model and label policy, audit (step 3) |
 | [DELEGATION.md](DELEGATION.md) | Tool calls with token exchange, RFC 8693 (step 5) |
 | [IDE-BRIDGE.md](IDE-BRIDGE.md) | Xcode and other IDEs as the signed-in user (step 6) |
+| [APP-TO-APP.md](APP-TO-APP.md) | App-to-app access with ID-JAG (step 8) |
 | [IDES.md](IDES.md) | IDE support matrix, testers wanted |
 | [KNOWLEDGE-DEMO.md](KNOWLEDGE-DEMO.md) | Same assistant, different answers by group |
 | [PLATFORM-SSO.md](PLATFORM-SSO.md) | Mac sign-in through Keycloak |

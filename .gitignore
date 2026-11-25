@@ -11,3 +11,5 @@ caddy/well-known/apple-app-site-association
 __pycache__/
 *.pyc
 *.tmp
+keycloak/extensions/*/target/
+backups/
