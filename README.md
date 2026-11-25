@@ -5,6 +5,12 @@ who may use which model; a gateway enforces it at the model and logs every decis
 
 Personal project by Christoph Fellner. Development grade, not for production.
 
+## Goal
+
+An open source, self-hosted identity layer for people and AI, built on the OpenID Connect and
+OAuth 2.0 RFCs: sign-in, who may use which AI model and data, AI tool access on the user's
+behalf, audit. What is covered and tested: [docs/STANDARDS.md](docs/STANDARDS.md).
+
 ## Idea
 
 The sovereignty boundary is the identity provider, not the GPU. A local model behind a foreign
@@ -49,7 +55,7 @@ Only what is ticked in [docs/TESTING.md](docs/TESTING.md) counts as working.
 
 ## Quick start
 
-Step by step: [docs/GUIDE.md](docs/GUIDE.md).
+Step by step: [docs/GUIDE.md](docs/GUIDE.md). All pages: [docs/README.md](docs/README.md). Contributing: [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ```sh
 ./scripts/bootstrap.sh example.org      # writes .env with host names and random secrets
