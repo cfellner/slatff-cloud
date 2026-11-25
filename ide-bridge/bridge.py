@@ -619,11 +619,11 @@ def configure(args):
 
 def show_key(args):
     if args[:1] == ["new"]:
-        k = local_key(new=True)
-        print("New local key (update the IDE setting; restart the bridge or the agent):")
-    else:
-        k = local_key()
-    print(k)
+        local_key(new=True)
+        print("New local key stored (not shown). Restart the bridge or the agent, then copy it to")
+        print("the IDE with: python3 bridge.py key | pbcopy")
+        return
+    print(local_key())
 
 
 def agent(args):

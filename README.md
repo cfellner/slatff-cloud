@@ -43,6 +43,7 @@ Keycloak  Open WebUI   Nextcloud    Jitsi        (Nextcloud, Jitsi optional)
 | Nextcloud (`--profile files`) | Files, calendars, contacts | Not run yet ([docs](docs/FILES.md)) |
 | Jitsi (`--profile meet`) | Meetings | Experimental ([docs](docs/MEET.md)) |
 | Cloudflare tunnel (`--profile tunnel`) | Remote access | Not run yet ([docs](docs/REMOTE-ACCESS.md)) |
+| App-to-app (ID-JAG) | App A gets app B access for the user; the IdP decides (IETF draft) | Live 25 Nov 2026, Keycloak 26.8.2 ([docs](docs/APP-TO-APP.md)) |
 | Platform SSO | Mac sign-in through Keycloak (University of Oslo extension) | Not run yet ([docs](docs/PLATFORM-SSO.md)) |
 
 Only what is ticked in [docs/TESTING.md](docs/TESTING.md) counts as working.

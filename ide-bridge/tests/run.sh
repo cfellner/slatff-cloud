@@ -67,7 +67,9 @@ has "session has ended" "clear message to sign in again"
 echo "--- part B: stable key, start without sign-in"
 C=$W/cfg; K1=$(SLATFF_CONFIG_DIR=$C SLATFF_TOKEN_STORE=file python3 bridge.py key)
 K2=$(SLATFF_CONFIG_DIR=$C SLATFF_TOKEN_STORE=file python3 bridge.py key)
-K3=$(SLATFF_CONFIG_DIR=$C SLATFF_TOKEN_STORE=file python3 bridge.py key new | tail -1)
+NEWOUT=$(SLATFF_CONFIG_DIR=$C SLATFF_TOKEN_STORE=file python3 bridge.py key new 2>&1)
+K3=$(SLATFF_CONFIG_DIR=$C SLATFF_TOKEN_STORE=file python3 bridge.py key)
+echo "$NEWOUT" | grep -qF "$K3" && { echo "FAIL key new prints the key"; fail=1; } || echo "PASS key new does not print the key"
 [ -n "$K1" ] && [ "$K1" = "$K2" ] && echo "PASS local key is the same on the next run" || { echo "FAIL key not stable"; fail=1; }
 [ -n "$K3" ] && [ "$K3" != "$K1" ] && echo "PASS key new replaces it" || { echo "FAIL key new"; fail=1; }
 [ "$(stat -c %a $C/local-key 2>/dev/null || stat -f %Lp $C/local-key)" = "600" ] && echo "PASS key file readable only by the user (file store)" || { echo "FAIL key file mode"; fail=1; }

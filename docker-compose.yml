@@ -21,7 +21,7 @@ services:
       retries: 20
 
   keycloak:
-    image: quay.io/keycloak/keycloak:${KEYCLOAK_VERSION:-26.5}
+    image: quay.io/keycloak/keycloak:${KEYCLOAK_VERSION:-26.8.2}
     restart: unless-stopped
     command: ["start-dev", "--import-realm"]
     depends_on:
@@ -161,6 +161,18 @@ services:
       - ./model-gateway/policy.json:/config/policy.json:ro
       - kb-tool-audit:/audit
     # No published port. Only the gateway (and other containers here) reach it.
+
+  # Demo app B for app-to-app access (step 8, docs/APP-TO-APP.md). Accepts only tokens from
+  # realm "apps" (audience notes-api, scope notes.read). JWKS fetched inside Docker.
+  notes-api:
+    build: ./notes-api
+    restart: unless-stopped
+    environment:
+      OIDC_ISSUER: https://${ID_HOST}/realms/apps
+      JWKS_URL: http://keycloak:8080/realms/apps/protocol/openid-connect/certs
+    volumes:
+      - notes-api-audit:/audit
+    # No published port.
 
   # Optional: model in a container, for hosts where a native Ollama is not wanted
   # (Linux with a GPU runtime, or CPU only). On a Mac a container cannot use the GPU.
@@ -337,3 +349,4 @@ volumes:
   nextcloud-data:
   gateway-audit:
   kb-tool-audit:
+  notes-api-audit:

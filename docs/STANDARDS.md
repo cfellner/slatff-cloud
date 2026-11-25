@@ -13,7 +13,7 @@ behalf, audit. Each part uses an open standard, so it can be replaced.
 | AI tool calls with a narrow, per-tool token | Gateway + token exchange (RFC 8693) | Live (impersonation, see below) |
 | AI in developer tools as the user | IDE bridge (Xcode) | Live on macOS |
 | Mac sign-in with the company account | Keycloak + University of Oslo Platform SSO extension | Prepared, not tested |
-| App-to-app access for agents | Not built | Planned |
+| App-to-app access for agents | ID-JAG issuer (Keycloak extension) + Keycloak receiver | Live 25 Nov 2026 (gaps in [APP-TO-APP.md](APP-TO-APP.md)) |
 
 ## Standards
 
@@ -25,9 +25,10 @@ behalf, audit. Each part uses an open standard, so it can be replaced.
 | RFC 7636 PKCE | Device sign-in of the IDE bridge | Tested 25 Nov 2026 |
 | RFC 8628 Device Authorization Grant | IDE bridge sign-in | Tested 25 Nov 2026 |
 | RFC 7009 Token Revocation | IDE bridge logout ends the session | Tested 25 Nov 2026 |
+| RFC 7523 JWT Authorization Grant | App B redeems the ID-JAG (Keycloak receiver) | Tested 25 Nov 2026 |
 | RFC 8693 Token Exchange | Per-tool token for AI tool calls | Partial: audience and scope narrowed; impersonation only, no `act` claim. Full delegation is step 7 ([DELEGATION.md](DELEGATION.md)) |
 | draft-ietf-wimse-aims | Agent identity model (IETF draft) | Read; not implemented |
-| Identity Assertion Authorization Grant (IETF draft) | App-to-app access for agents | Not built |
+| draft-ietf-oauth-identity-assertion-authz-grant-06 (ID-JAG) | App-to-app access for agents | Issuer tested 25 Nov 2026 (request, claims, typ, policy, errors). Receiver is Keycloak's, based on draft -01: takes scope from the request, not the ID-JAG. Not done: IdP metadata, refresh token or SAML subject, tenant, DPoP |
 
 "Live" and "Tested" mean ticked in [TESTING.md](TESTING.md) with a date. Nothing here is
 certified; "compliant" is only claimed where a row says Tested and the spec's required parts
