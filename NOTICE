@@ -32,7 +32,8 @@ Models pulled by the setup scripts, not included:
 
 Referenced but not included:
 
-  keycloak-psso-extension, University of Oslo (GPL-2.0-or-later)
+  keycloak-psso-extension, University of Oslo (GPL-2.0-or-later; bundles Apache Kerby,
+  Apache-2.0, and Bouncy Castle, MIT). Downloaded and verified by scripts/get-psso-extension.sh
     https://github.com/unioslo/keycloak-psso-extension
-  weblogin-mac-sso-extension, University of Oslo (Apache-2.0)
+  weblogin-mac-sso-extension, University of Oslo (Apache-2.0). Built by the user with their own team
     https://github.com/unioslo/weblogin-mac-sso-extension

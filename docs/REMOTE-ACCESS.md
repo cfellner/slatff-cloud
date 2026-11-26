@@ -12,6 +12,11 @@ Status: not run yet.
 - Free plan: 100 MB per upload.
 - Home devices also go through Cloudflare (one name per service, required by OpenID Connect).
 
+## Step 11 (Apple Business / School Manager)
+
+Apple's servers call the id host, so it must be public. Publish only `id` (skip `ai` and `files` in
+steps 3 and 4 below); everything else stays on the local network. See [APPLE.md](APPLE.md).
+
 ## Setup
 
 1. Zero Trust › Networks › Tunnels › Create (Cloudflared), name `slatff`; copy only the token.

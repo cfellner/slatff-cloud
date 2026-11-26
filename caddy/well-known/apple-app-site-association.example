@@ -1,8 +1,8 @@
 {
   "authsrv": {
-    "apps": ["TEAMID.your.bundle.id.ssoe"]
+    "apps": ["TEAMID.no.uio.WebloginSSO"]
   },
   "webcredentials": {
-    "apps": ["TEAMID.your.bundle.id"]
+    "apps": ["TEAMID.no.uio.WebloginSSO"]
   }
 }

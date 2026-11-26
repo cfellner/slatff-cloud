@@ -21,13 +21,18 @@ present.
 - Keycloak team blog posts: [standard token exchange](https://www.keycloak.org/2025/05/standard-token-exchange-kc-26-2),
   [JWT authorization grant and identity chaining](https://www.keycloak.org/2026/01/jwt-authorization-grant),
   [Keycloak 26.8.0](https://www.keycloak.org/2026/10/keycloak-2680-released)
+- Thomas Darimont (Keycloak maintainer), [experimental Shared Signals Framework support in
+  Keycloak](https://www.keycloak.org/2026/07/experimental-ssf-support) and the
+  [Keycloak SSF guide](https://www.keycloak.org/securing-apps/ssf-support): basis for step 11
+  (Apple Business / School Manager); settings checked against the Keycloak source (tag 26.8.2, `ssf/`)
 - Skycloak, [token exchange delegation for AI agents in Keycloak 26.8](https://skycloak.io/blog/keycloak-26-8-token-exchange-delegation-ai-agents/):
   background for step 10; behaviour checked against the Keycloak source (below)
 
 ## Standards
 
-Listed with links in [STANDARDS.md](STANDARDS.md): OpenID Connect Core; RFC 6749, 7009, 7519,
-7523, 7636, 7638, 8252, 8628, 8693, 8707, 9449; W3C WebAuthn; IETF drafts ID-JAG and AIMS.
+Listed with links in [STANDARDS.md](STANDARDS.md): OpenID Connect Core; OpenID Shared Signals
+Framework, CAEP and RISC; RFC 6749, 7009, 7519, 7523, 7636, 7638, 8252, 8417, 8628, 8693, 8707,
+8935, 8936, 9449; W3C WebAuthn; IETF drafts ID-JAG and AIMS.
 
 ## Software and documentation
 
@@ -40,7 +45,12 @@ Listed with links in [STANDARDS.md](STANDARDS.md): OpenID Connect Core; RFC 6749
 - [Ollama](https://ollama.com) and Meta's [Llama 3.2](https://ollama.com/library/llama3.2) models
 - University of Oslo: [keycloak-psso-extension](https://github.com/unioslo/keycloak-psso-extension)
   and [weblogin-mac-sso-extension](https://github.com/unioslo/weblogin-mac-sso-extension)
-  (README, wiki and releases)
+  (README, [wiki](https://github.com/unioslo/keycloak-psso-extension/wiki),
+  [Weblogin wiki](https://github.com/unioslo/weblogin-mac-sso-extension/wiki) and releases):
+  the realm settings and the Platform SSO profile in step 11 follow their wikis
+- Apple: [federated authentication with your IdP in Apple Business](https://support.apple.com/guide/business/federated-authentication-identity-provider-axmfcab66783/web);
+  authentik's [Apple Business integration guide](https://integrations.goauthentik.io/device-management/apple/)
+  as a second reference for the same setup
 - Nordeck: [jitsi-keycloak-adapter-v2](https://github.com/nordeck/jitsi-keycloak-adapter-v2);
   Jitsi: [docker-jitsi-meet](https://github.com/jitsi/docker-jitsi-meet) and the [handbook](https://jitsi.github.io/handbook/)
 - Nextcloud: [container image](https://github.com/nextcloud/docker) and the [user_oidc](https://github.com/nextcloud/user_oidc) app

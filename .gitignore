@@ -2,6 +2,7 @@
 .env.bak
 keycloak/providers/*.jar
 keycloak/providers/*.sig
+keycloak/providers/*.sha256
 *.log
 logs/
 .DS_Store
