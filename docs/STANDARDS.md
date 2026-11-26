@@ -12,6 +12,7 @@ behalf, audit. Each part uses an open standard, so it can be replaced.
 | AI access by user, role and data label | Model gateway | Live |
 | AI tool calls with a narrow, per-tool token | Gateway + token exchange (RFC 8693) | Live (impersonation, see below) |
 | AI in developer tools as the user | IDE bridge (Xcode) | Live on macOS |
+| IDE bridge settings and install by MDM (Jamf) | Managed preferences profile + install script ([MDM.md](MDM.md)) | Prepared, not tested |
 | Mac sign-in with the company account | Keycloak + University of Oslo Platform SSO extension | Prepared, not tested |
 | Agent acting for a user, user and agent in every token | Keycloak delegation (preview) + gateway agent policy | Live 26 Nov 2026, one hop ([AGENTS.md](AGENTS.md)) |
 | App-to-app access for agents | ID-JAG issuer (Keycloak extension) + Keycloak receiver | Live 25 Nov 2026 (gaps in [APP-TO-APP.md](APP-TO-APP.md)) |
@@ -23,7 +24,8 @@ behalf, audit. Each part uses an open standard, so it can be replaced.
 | OpenID Connect Core 1.0 | Sign-in, ID tokens | Live |
 | RFC 6749 OAuth 2.0 | Access and refresh tokens | Live |
 | RFC 7519 JWT | Tokens checked by gateway and tool | Live |
-| RFC 7636 PKCE | Device sign-in of the IDE bridge | Tested 25 Nov 2026 |
+| RFC 7636 PKCE | IDE bridge device sign-in; agent-console browser sign-in | Tested 25 Nov 2026 (bridge), 26 Nov 2026 (agent-console) |
+| RFC 8252 OAuth for native apps | Agent sign-in in the browser with a loopback redirect (127.0.0.1) | Tested 26 Nov 2026 |
 | RFC 8628 Device Authorization Grant | IDE bridge sign-in | Tested 25 Nov 2026 |
 | RFC 7009 Token Revocation | IDE bridge logout ends the session | Tested 25 Nov 2026 |
 | RFC 9449 DPoP | IDE bridge tokens bound to a key; gateway checks the proof | Tested 26 Nov 2026 (Xcode through the bridge; key in Keychain, not Secure Enclave) |
@@ -37,3 +39,5 @@ behalf, audit. Each part uses an open standard, so it can be replaced.
 "Live" and "Tested" mean ticked in [TESTING.md](TESTING.md) with a date. Nothing here is
 certified; "compliant" is only claimed where a row says Tested and the spec's required parts
 are covered.
+
+Known security gaps and what was hardened: [THREATS.md](THREATS.md).
