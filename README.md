@@ -3,18 +3,33 @@
 Self-hosted identity in front of AI, files and meetings for a small business. Keycloak decides
 who may use which model; a gateway enforces it at the model and logs every decision.
 
-Personal project by Christoph Fellner. Development grade, not for production.
+Proof of concept (PoC) by Christoph Fellner. It shows that these standards work together,
+tested on one Mac. Not for production.
 
-## Goal
+## What it solves
 
-An open source, self-hosted identity layer for people and AI, built on the OpenID Connect and
-OAuth 2.0 RFCs: sign-in, who may use which AI model and data, AI tool access on the user's
-behalf, audit. What is covered and tested: [docs/STANDARDS.md](docs/STANDARDS.md).
+Organisations want AI, but who may use which model and which data is usually decided by the
+AI vendor or the chat app. SLATFF.Cloud puts that decision in an identity provider the
+organisation runs itself, and enforces it at the model, at tools and between apps.
 
-## Idea
+## Why identity
 
-The sovereignty boundary is the identity provider, not the GPU. A local model behind a foreign
-SaaS login is not sovereign. Details: [docs/AI-ACCESS.md](docs/AI-ACCESS.md).
+Apps can be swapped; the directory and sign-in cannot, so that is where lock-in sits. A local
+model behind a foreign sign-in is not sovereign. Open standards (OpenID Connect, OAuth RFCs)
+are the interfaces, so each part can be replaced. What is covered and tested:
+[docs/STANDARDS.md](docs/STANDARDS.md). Background: [docs/AI-ACCESS.md](docs/AI-ACCESS.md).
+
+## Five questions
+
+| Question | SLATFF.Cloud |
+|---|---|
+| Jurisdiction | Wherever you run it |
+| Keys and metadata | Realm keys, audit log and traces stay on your server |
+| Openness and exit | Apache 2.0, open standards, every part replaceable |
+| Operations | One machine with Docker; you run upgrades yourself |
+| Five-year cost incl. people | Not measured. PoC of the technical layer; change management not covered |
+
+Questions from Lothar Zeitler's ForFoxes series on the sovereign workplace.
 
 ## Components
 
