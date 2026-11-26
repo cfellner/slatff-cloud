@@ -93,7 +93,16 @@ Docker 29.9.3 / Compose v5.7.0, macOS 27.3, Apple M5 Max.
 - [ ] `IDEProhibitOnDeviceModelInteraction` true: effect, if any
 - [ ] Can MDM preset the chat provider or "Allow external agents"? (no documented key yet)
 
-## Files
+## Passkeys and DPoP (step 9)
+
+- [x] Offline gateway: 11 DPoP checks (stolen token as Bearer, no proof, replay, other key, other URL, other method, old proof, other token, unbound token from ide-bridge refused; valid proof and Open WebUI Bearer allowed) (26 Nov 2026)
+- [x] Offline bridge: all requests DPoP-bound, incl. refresh (26 Nov 2026)
+- [x] Keycloak offers RS256 for DPoP; ide-bridge requires bound tokens (26 Nov 2026)
+- [x] Live: bridge signs in again, Xcode works, audit shows "dpop": true (carol, llama3.2:3b, 26 Nov 2026 09:02)
+- [ ] Live: copied access token from the bridge refused at the gateway
+- [x] Passkey set up for alice in Safari (Touch ID, Apple Passwords); sign-in with passkey, no password (26 Nov 2026)
+- [ ] Passkey from another device (iPhone, hybrid)
+
 
 - [ ] Profile starts (check `NEXTCLOUD_TAG` exists)
 - [ ] `setup-files.sh` configures `user_oidc`

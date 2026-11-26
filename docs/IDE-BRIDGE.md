@@ -78,7 +78,7 @@ docker compose exec -T model-gateway sh -c 'tail -3 /audit/audit.jsonl'
 Expect your user, `client: ide-bridge`, `ide: <label>`. The IDE label is reported by the
 bridge, not verified.
 
-Offline tests: `bash ide-bridge/tests/run.sh` (40 checks: both API styles, key in header and
+Offline tests: `bash ide-bridge/tests/run.sh` (42 checks: both API styles, key in header and
 URL, policy refusals, refresh, revocation, audit fields, stable key, start without sign-in,
 secret store). CI also runs
 `bridge.py selftest-store` on Windows and Linux.

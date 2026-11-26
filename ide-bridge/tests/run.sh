@@ -10,7 +10,7 @@ W=$(mktemp -d); cp $G/tests/fake.py $G/gateway.py $G/policy.json ../bridge.py "$
 python3 fake.py > fake.log 2>&1 & F=$!
 sleep 2
 ISS=http://127.0.0.1:9001/realms/slatff
-OIDC_ISSUER=$ISS UPSTREAM_URL=http://127.0.0.1:9002/v1 POLICY_FILE=./policy.json AUDIT_FILE=./audit/audit.jsonl \
+OIDC_ISSUER=$ISS DPOP_REQUIRED_CLIENTS=ide-bridge UPSTREAM_URL=http://127.0.0.1:9002/v1 POLICY_FILE=./policy.json AUDIT_FILE=./audit/audit.jsonl \
   python3 gateway.py > gw.log 2>&1 & GW=$!
 for i in $(seq 1 10); do curl -sf localhost:8080/healthz >/dev/null && break; sleep 1; done
 KEY=local-test-key
@@ -60,6 +60,12 @@ import json
 r=[json.loads(l) for l in open("audit/audit.jsonl")]
 assert any(x.get("user")=="alice" and x.get("client")=="ide-bridge" and x.get("ide")=="qtcreator" for x in r)
 PY
+curl -s localhost:9001/test/jkt | grep -q '"jkt": "' && echo "PASS tokens are bound to the bridge's DPoP key (incl. after refresh)" || { echo "FAIL DPoP binding"; fail=1; }
+python3 - <<'PY2' && echo "PASS gateway audit shows the requests used DPoP" || { echo "FAIL audit dpop"; fail=1; }
+import json
+r=[json.loads(l) for l in open("audit/audit.jsonl")]
+assert r and all(x.get("dpop") for x in r if x.get("client")=="ide-bridge")
+PY2
 curl -s -X POST localhost:9001/test/revoke >/dev/null
 echo "Keycloak session revoked; waiting until the bridge must refresh again..."; sleep 12
 t 403 "after revocation the bridge stops" $K/v1/models

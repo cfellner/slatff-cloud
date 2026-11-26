@@ -80,7 +80,7 @@ MANAGED_DOMAIN = "cloud.slatff.ide-bridge"
 # managed preference key -> (config key, environment variable)
 MANAGED_KEYS = {"Issuer": ("issuer", "SLATFF_ISSUER"), "Gateway": ("gateway", "SLATFF_GATEWAY"),
                 "ClientID": ("client_id", "SLATFF_CLIENT_ID"), "Port": ("port", "SLATFF_BRIDGE_PORT"),
-                "IDE": ("ide", "SLATFF_IDE")}
+                "IDE": ("ide", "SLATFF_IDE"), "DPoP": ("dpop", "SLATFF_DPOP")}
 
 
 def load_managed():
@@ -261,9 +261,105 @@ LOCAL_KEY = None          # set in serve()
 
 
 # --- OIDC ----------------------------------------------------------------------------
-def post_form(url, data):
-    req = urllib.request.Request(url, data=urllib.parse.urlencode(data).encode(),
-                                 headers={"Content-Type": "application/x-www-form-urlencoded"})
+# --- DPoP (RFC 9449): tokens bound to a key this bridge holds ---------------------------
+# A copied access or refresh token is useless without the private key. Standard library only
+# (RSA keygen and RS256 signing in Python), so the bridge still runs anywhere Python 3.9 does.
+# The key is created once and kept in the OS secret store. SLATFF_DPOP=off disables it.
+DPOP = (SOURCES["dpop"][0] or "on").lower() != "off"     # MDM, environment or config; default on
+_SMALL_PRIMES = [p for p in range(3, 2000, 2) if all(p % q for q in range(3, int(p ** 0.5) + 1, 2))]
+
+
+def _probable_prime(n, rounds=40):
+    for p in _SMALL_PRIMES:
+        if n % p == 0:
+            return n == p
+    d, r = n - 1, 0
+    while d % 2 == 0:
+        d //= 2
+        r += 1
+    for _ in range(rounds):
+        a = secrets.randbelow(n - 3) + 2
+        x = pow(a, d, n)
+        if x in (1, n - 1):
+            continue
+        for _ in range(r - 1):
+            x = pow(x, 2, n)
+            if x == n - 1:
+                break
+        else:
+            return False
+    return True
+
+
+def _rsa_generate(bits=2048, e=65537):
+    def prime():
+        while True:
+            c = secrets.randbits(bits // 2) | (3 << (bits // 2 - 2)) | 1
+            if (c - 1) % e and _probable_prime(c):
+                return c
+    while True:
+        p, q = prime(), prime()
+        if p != q and (p * q).bit_length() == bits:
+            return {"n": p * q, "e": e, "d": pow(e, -1, (p - 1) * (q - 1))}
+
+
+def _b64u(b):
+    return base64.urlsafe_b64encode(b).rstrip(b"=").decode()
+
+
+def _int_bytes(i):
+    return i.to_bytes((i.bit_length() + 7) // 8, "big")
+
+
+_dpop_key = None
+
+
+def dpop_key():
+    """The bridge's DPoP key pair, created once and kept in the secret store."""
+    global _dpop_key
+    if _dpop_key:
+        return _dpop_key
+    ks = Store(account="dpop-key", name="dpop-key")
+    raw = ks.load()
+    if raw:
+        k = {a: int(v, 16) for a, v in json.loads(raw).items()}
+    else:
+        k = _rsa_generate()
+        ks.save(json.dumps({a: format(v, "x") for a, v in k.items()}))
+    _dpop_key = k
+    return k
+
+
+def dpop_jwk():
+    k = dpop_key()
+    return {"kty": "RSA", "e": _b64u(_int_bytes(k["e"])), "n": _b64u(_int_bytes(k["n"]))}
+
+
+def _rs256(k, data):
+    import hashlib
+    size = (k["n"].bit_length() + 7) // 8
+    t = bytes.fromhex("3031300d060960864801650304020105000420") + hashlib.sha256(data).digest()
+    em = b"\x00\x01" + b"\xff" * (size - len(t) - 3) + b"\x00" + t
+    return pow(int.from_bytes(em, "big"), k["d"], k["n"]).to_bytes(size, "big")
+
+
+def dpop_proof(method, url, access_token=None):
+    """DPoP proof JWT for one request (RFC 9449 section 4)."""
+    import hashlib
+    header = {"typ": "dpop+jwt", "alg": "RS256", "jwk": dpop_jwk()}
+    payload = {"jti": secrets.token_urlsafe(16), "htm": method, "htu": url.split("?")[0], "iat": int(time.time())}
+    if access_token:
+        payload["ath"] = _b64u(hashlib.sha256(access_token.encode()).digest())
+    signing_input = (_b64u(json.dumps(header, separators=(",", ":")).encode()) + "." +
+                     _b64u(json.dumps(payload, separators=(",", ":")).encode()))
+    return signing_input + "." + _b64u(_rs256(dpop_key(), signing_input.encode()))
+
+
+def post_form(url, data, dpop=False):
+    headers = {"Content-Type": "application/x-www-form-urlencoded"}
+    if dpop and DPOP:
+        headers["DPoP"] = dpop_proof("POST", url)
+    req = urllib.request.Request(url, data=urllib.parse.urlencode(data).encode(), headers=headers)
     try:
         with urllib.request.urlopen(req, timeout=30) as r:
             return r.status, json.loads(r.read() or b"{}")
@@ -325,7 +421,7 @@ def login(open_browser=True, private=False):
     interval, deadline = d.get("interval", 5), time.time() + d.get("expires_in", 600)
     while time.time() < deadline:
         time.sleep(interval)
-        st, t = post_form(f"{ISSUER}/protocol/openid-connect/token", {
+        st, t = post_form(f"{ISSUER}/protocol/openid-connect/token", dpop=True, data={
             "grant_type": "urn:ietf:params:oauth:grant-type:device_code",
             "device_code": d["device_code"], "client_id": CLIENT_ID, "code_verifier": verifier})
         if st == 200:
@@ -355,7 +451,7 @@ def logout():
     locally. A bridge that is still running stops at its next refresh (within 4 minutes)."""
     tok = store.load()
     if tok:
-        st, _ = post_form(f"{ISSUER}/protocol/openid-connect/revoke", {
+        st, _ = post_form(f"{ISSUER}/protocol/openid-connect/revoke", dpop=True, data={
             "client_id": CLIENT_ID, "token": tok, "token_type_hint": "refresh_token"})
         print("Session ended at Keycloak." if st == 200 else f"Keycloak revoke answered {st}; removing the local token anyway.")
     store.delete()
@@ -383,7 +479,7 @@ def access_token():
         refresh = mine or stored
     if not refresh:
         return None
-    st, t = post_form(f"{ISSUER}/protocol/openid-connect/token", {
+    st, t = post_form(f"{ISSUER}/protocol/openid-connect/token", dpop=True, data={
         "grant_type": "refresh_token", "refresh_token": refresh, "client_id": CLIENT_ID})
     if st != 200:          # session ended in Keycloak (revoked, user disabled, timed out)
         with _lock:
@@ -401,9 +497,12 @@ def gateway(method, path, body=None):
     tok = access_token()
     if not tok:
         return None, 401
-    req = urllib.request.Request(GATEWAY + path, data=body, method=method, headers={
-        "Authorization": f"Bearer {tok}", "Content-Type": "application/json",
-        "X-SLATFF-IDE": IDE, "User-Agent": f"slatff-ide-bridge ({IDE})"})
+    headers = {"Authorization": f"Bearer {tok}", "Content-Type": "application/json",
+               "X-SLATFF-IDE": IDE, "User-Agent": f"slatff-ide-bridge ({IDE})"}
+    if (claims(tok).get("cnf") or {}).get("jkt"):      # DPoP-bound token: prove the key
+        headers["Authorization"] = f"DPoP {tok}"
+        headers["DPoP"] = dpop_proof(method, GATEWAY + path, tok)
+    req = urllib.request.Request(GATEWAY + path, data=body, method=method, headers=headers)
     try:
         up = urllib.request.urlopen(req, timeout=600)
         return up, up.status

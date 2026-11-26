@@ -19,10 +19,17 @@ the access decision at the model boundary, independent of the chat application:
    as it moves: the tool cannot reuse it against the model gateway or another tool.
    Both token IDs and a correlation ID are written to the audit log (the evidence chain).
 
+6. Proof of possession (DPoP, RFC 9449): a token bound to a key (claim cnf.jkt) is only
+   accepted with "Authorization: DPoP" and a valid DPoP proof signed by that key, for this
+   method and URL, recent, not replayed. A copied token alone is refused. Clients listed in
+   DPOP_REQUIRED_CLIENTS must use bound tokens.
+
 Model listing (GET /v1/models) is answered without a token so the chat application can
 build its model list; with a token the list is filtered to what that user may use.
 """
 import asyncio
+import base64
+import hashlib
 import json
 import logging
 import os
@@ -48,6 +55,10 @@ TOOL_RE = re.compile(r"^[a-z0-9][a-z0-9-]{0,40}$")
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 log = logging.getLogger("gateway")
+DPOP_HTU_BASE = os.environ.get("DPOP_HTU_BASE", "").rstrip("/")   # public base, e.g. https://ai.example/gateway
+DPOP_REQUIRED_CLIENTS = {c.strip() for c in os.environ.get("DPOP_REQUIRED_CLIENTS", "").split(",") if c.strip()}
+DPOP_MAX_AGE = 60
+_dpop_seen = {}      # proof jti -> expiry (replay check)
 jwks = PyJWKClient(f"{ISSUER}/protocol/openid-connect/certs", cache_keys=True, lifespan=300)
 
 _policy = {"mtime": 0.0, "data": {}}
@@ -81,14 +92,64 @@ def audit(record):
 
 
 def bearer(request):
+    """(scheme, token) from Authorization: Bearer or DPoP."""
     auth = request.headers.get("Authorization", "")
-    if not auth.startswith("Bearer ") or len(auth) < 20:
-        return None
-    return auth[7:]
+    for scheme in ("Bearer", "DPoP"):
+        if auth.startswith(scheme + " ") and len(auth) > len(scheme) + 13:
+            return scheme, auth[len(scheme) + 1:]
+    return None, None
+
+
+def _b64u(b):
+    return base64.urlsafe_b64encode(b).rstrip(b"=").decode()
+
+
+def jwk_thumbprint(jwk):
+    """RFC 7638."""
+    members = {"RSA": ("e", "kty", "n"), "EC": ("crv", "kty", "x", "y"), "OKP": ("crv", "kty", "x")}[jwk["kty"]]
+    canon = json.dumps({m: jwk[m] for m in members}, separators=(",", ":"), sort_keys=True)
+    return _b64u(hashlib.sha256(canon.encode()).digest())
+
+
+def check_dpop(request, scheme, token, claims):
+    """None if fine, else the reason. RFC 9449 sections 4.3 and 7.1."""
+    jkt = (claims.get("cnf") or {}).get("jkt")
+    if not jkt:
+        if claims.get("azp") in DPOP_REQUIRED_CLIENTS:
+            return f"client {claims.get('azp')} must use a DPoP-bound token"
+        return "DPoP scheme used with a token that is not bound" if scheme == "DPoP" else None
+    if scheme != "DPoP":
+        return "token is DPoP-bound: send it as Authorization: DPoP with a DPoP proof"
+    proof = request.headers.get("DPoP", "")
+    try:
+        h = jwt.get_unverified_header(proof)
+        jwk, alg = h.get("jwk") or {}, h.get("alg")
+        if h.get("typ") != "dpop+jwt" or alg not in ("RS256", "PS256", "ES256") or "d" in jwk:
+            return "DPoP proof header not acceptable"
+        c = jwt.decode(proof, jwt.PyJWK(jwk, algorithm=alg).key, algorithms=[alg],
+                       options={"verify_aud": False, "require": ["iat", "jti", "htm", "htu"]})
+    except Exception as e:
+        return f"DPoP proof missing or invalid ({type(e).__name__})"
+    if jwk_thumbprint(jwk) != jkt:
+        return "DPoP key does not match the token (cnf.jkt)"
+    expected = (DPOP_HTU_BASE + request.path) if DPOP_HTU_BASE else str(request.url).split("?")[0]
+    if c["htm"] != request.method or c["htu"].split("?")[0].split("#")[0] != expected:
+        return "DPoP proof is for another method or URL"
+    now = time.time()
+    if abs(now - c["iat"]) > DPOP_MAX_AGE:
+        return "DPoP proof too old or from the future"
+    if c.get("ath") != _b64u(hashlib.sha256(token.encode()).digest()):
+        return "DPoP proof is for another token (ath)"
+    for k in [k for k, exp in _dpop_seen.items() if exp < now]:
+        del _dpop_seen[k]
+    if c["jti"] in _dpop_seen:
+        return "DPoP proof replayed"
+    _dpop_seen[c["jti"]] = now + 2 * DPOP_MAX_AGE
+    return None
 
 
 async def verify(request):
-    token = bearer(request)
+    scheme, token = bearer(request)
     if not token:
         return None, "no user token"
     try:
@@ -98,9 +159,12 @@ async def verify(request):
             audience=AUDIENCE, issuer=ISSUER, leeway=30,
             options={"require": ["exp", "iat", "iss", "sub"]},
         )
-        return claims, None
     except Exception as e:
         return None, f"token rejected ({type(e).__name__})"
+    why = check_dpop(request, scheme, token, claims)
+    if why:
+        return None, why
+    return claims, None
 
 
 def roles_of(claims):
@@ -118,6 +182,7 @@ def who(claims):
         "client": claims.get("azp"),
         "roles": sorted(r for r in roles_of(claims) if not r.startswith("default-roles")),
         "groups": claims.get("groups"),
+        "dpop": bool((claims.get("cnf") or {}).get("jkt")),
     }
 
 
@@ -253,7 +318,7 @@ async def tool_call(request):
     if not CLIENT_SECRET:
         return deny(503, "gateway has no client secret, delegation is not configured", record)
 
-    token, why = await exchange(request.app["http"], bearer(request), tool)
+    token, why = await exchange(request.app["http"], bearer(request)[1], tool)
     if not token:
         return deny(502, why, record)
     # Record what was actually delegated (read from the token Keycloak issued).

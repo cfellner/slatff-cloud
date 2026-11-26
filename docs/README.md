@@ -21,6 +21,7 @@ Read in this order.
 | [DELEGATION.md](DELEGATION.md) | Tool calls with token exchange, RFC 8693 (step 5) |
 | [IDE-BRIDGE.md](IDE-BRIDGE.md) | Xcode and other IDEs as the signed-in user (step 6) |
 | [APP-TO-APP.md](APP-TO-APP.md) | App-to-app access with ID-JAG (step 8) |
+| [PASSKEYS-DPOP.md](PASSKEYS-DPOP.md) | Passkeys for people, DPoP-bound tokens for the IDE bridge (step 9) |
 | [MDM.md](MDM.md) | IDE bridge settings and install with Jamf; Xcode controls |
 | [IDES.md](IDES.md) | IDE support matrix, testers wanted |
 | [KNOWLEDGE-DEMO.md](KNOWLEDGE-DEMO.md) | Same assistant, different answers by group |

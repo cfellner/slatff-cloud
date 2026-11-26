@@ -25,6 +25,8 @@ behalf, audit. Each part uses an open standard, so it can be replaced.
 | RFC 7636 PKCE | Device sign-in of the IDE bridge | Tested 25 Nov 2026 |
 | RFC 8628 Device Authorization Grant | IDE bridge sign-in | Tested 25 Nov 2026 |
 | RFC 7009 Token Revocation | IDE bridge logout ends the session | Tested 25 Nov 2026 |
+| RFC 9449 DPoP | IDE bridge tokens bound to a key; gateway checks the proof | Tested 26 Nov 2026 (Xcode through the bridge; key in Keychain, not Secure Enclave) |
+| WebAuthn / FIDO2 passkeys | People sign in without a password | Tested 26 Nov 2026 (Touch ID in Safari, Apple Passwords) |
 | RFC 7523 JWT Authorization Grant | App B redeems the ID-JAG (Keycloak receiver) | Tested 25 Nov 2026 |
 | RFC 8693 Token Exchange | Per-tool token for AI tool calls | Partial: audience and scope narrowed; impersonation only, no `act` claim. Full delegation is step 7 ([DELEGATION.md](DELEGATION.md)) |
 | draft-ietf-wimse-aims | Agent identity model (IETF draft) | Read; not implemented |
