@@ -5,12 +5,12 @@
 # Usage: bash model-gateway/tests/run.sh   (needs python3 with aiohttp and PyJWT[crypto])
 set -u
 cd "$(dirname "$0")"
-W=$(mktemp -d); cp -r fake.py mint.py docs ../gateway.py ../../kb-tool/kb_tool.py "$W"/
+W=$(mktemp -d); cp -r fake.py mint.py dpop.py docs ../gateway.py ../../kb-tool/kb_tool.py "$W"/
 sed 's#http://kb-tool:8080/search#http://127.0.0.1:9003/search#' ../policy.json > "$W/policy.json"; cd "$W"
 python3 fake.py > fake.log 2>&1 & F=$!
 sleep 2
 ISS=http://127.0.0.1:9001/realms/slatff
-OIDC_ISSUER=$ISS UPSTREAM_URL=http://127.0.0.1:9002/v1 GATEWAY_CLIENT_SECRET=test-secret \
+OIDC_ISSUER=$ISS UPSTREAM_URL=http://127.0.0.1:9002/v1 GATEWAY_CLIENT_SECRET=test-secret DPOP_REQUIRED_CLIENTS=ide-bridge \
   POLICY_FILE=./policy.json AUDIT_FILE=./audit/audit.jsonl python3 gateway.py > gw.log 2>&1 & G=$!
 OIDC_ISSUER=$ISS DOCS_DIR=./docs POLICY_FILE=./policy.json AUDIT_FILE=./audit/kb-tool.jsonl \
   python3 -c "import kb_tool, aiohttp.web as w; a=w.Application(); a.router.add_post('/search', kb_tool.search); w.run_app(a, host='127.0.0.1', port=9003, access_log=None)" > kb.log 2>&1 & K=$!
@@ -71,6 +71,27 @@ X2=$(curl -s -o /dev/null -w "%{http_code}" 127.0.0.1:9001/realms/slatff/protoco
     -d client_id=model-gateway -d client_secret=test-secret -d subject_token="$A" \
     -d subject_token_type=urn:ietf:params:oauth:token-type:access_token -d audience=payments-api -d scope=kb-search)
 [ "$X2" = "400" ] && echo "PASS exchange for an audience outside the policy is refused" || { echo "FAIL widen audience: $X2"; fail=1; }
+
+echo "--- proof of possession (DPoP, RFC 9449)"
+python3 dpop.py keygen k1.pem; python3 dpop.py keygen k2.pem
+JKT=$(python3 dpop.py jkt k1.pem)
+D1=$(CNF_JKT=$JKT AZP=ide-bridge python3 mint.py alice ai-user)
+URL=http://localhost:8080/v1/chat/completions
+pf(){ python3 dpop.py proof "$@"; }
+t 401 "bound token as plain Bearer is refused (stolen token)" $U -H "Authorization: Bearer $D1" -d "$P"
+t 401 "bound token without a proof is refused" $U -H "Authorization: DPoP $D1" -d "$P"
+PR=$(pf k1.pem POST $URL "$D1")
+t 200 "bound token with a valid proof" $U -H "Authorization: DPoP $D1" -H "DPoP: $PR" -d "$P"
+t 401 "same proof twice is refused (replay)" $U -H "Authorization: DPoP $D1" -H "DPoP: $PR" -d "$P"
+t 401 "proof signed by another key is refused" $U -H "Authorization: DPoP $D1" -H "DPoP: $(pf k2.pem POST $URL "$D1")" -d "$P"
+t 401 "proof for another URL is refused" $U -H "Authorization: DPoP $D1" -H "DPoP: $(pf k1.pem POST http://localhost:8080/v1/other "$D1")" -d "$P"
+t 401 "proof for another method is refused" $U -H "Authorization: DPoP $D1" -H "DPoP: $(pf k1.pem GET $URL "$D1")" -d "$P"
+t 401 "old proof is refused" $U -H "Authorization: DPoP $D1" -H "DPoP: $(pf k1.pem POST $URL "$D1" -300)" -d "$P"
+t 401 "proof for another token is refused (ath)" $U -H "Authorization: DPoP $D1" -H "DPoP: $(pf k1.pem POST $URL "$A")" -d "$P"
+UB=$(AZP=ide-bridge python3 mint.py alice ai-user)
+t 401 "client that must use DPoP sends an unbound token" $U -H "Authorization: Bearer $UB" -d "$P"
+t 200 "other clients may still use Bearer (Open WebUI)" $U -H "Authorization: Bearer $A" -d "$P"
+grep -q '"dpop": true' audit/audit.jsonl && echo "PASS audit records dpop true" || { echo "FAIL audit dpop"; fail=1; }
 
 echo "--- evidence chain"
 python3 - <<'PY' && echo "PASS gateway and tool audit lines join on correlation ID and token ID" || { echo "FAIL evidence chain"; fail=1; }

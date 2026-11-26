@@ -144,6 +144,10 @@ services:
       # Delegation (docs/DELEGATION.md): the gateway's own Keycloak client secret, used
       # only for token exchange. Empty = tool calls are refused (503).
       GATEWAY_CLIENT_SECRET: ${GATEWAY_CLIENT_SECRET:-}
+      # Proof of possession (docs/PASSKEYS-DPOP.md): public URL the gateway is called at, and
+      # clients that must send DPoP-bound tokens. Open WebUI still uses plain Bearer tokens.
+      DPOP_HTU_BASE: https://${AI_HOST}/gateway
+      DPOP_REQUIRED_CLIENTS: ${DPOP_REQUIRED_CLIENTS:-ide-bridge}
     volumes:
       - ./model-gateway/policy.json:/config/policy.json:ro
       - gateway-audit:/audit

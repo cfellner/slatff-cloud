@@ -124,6 +124,14 @@ bash scripts/mac-step8-app-to-app.sh
 
 Upgrades Keycloak to 26.8.2 (backup first). All lines PASS. Details: [APP-TO-APP.md](APP-TO-APP.md).
 
+## 7c. Passkeys and DPoP
+
+```sh
+bash scripts/mac-step9-passkeys-dpop.sh
+```
+
+Then follow the steps it prints. Details: [PASSKEYS-DPOP.md](PASSKEYS-DPOP.md).
+
 ## 8. Optional
 
 | Part | Start | Docs |
