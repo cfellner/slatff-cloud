@@ -12,6 +12,24 @@ Organisations want AI, but who may use which model and which data is usually dec
 AI vendor or the chat app. SLATFF.Cloud puts that decision in an identity provider the
 organisation runs itself, and enforces it at the model, at tools and between apps.
 
+## Role in AI governance
+
+AI governance combines policy with evidence that the policy is applied. SLATFF.Cloud provides
+the technical controls and the evidence. Each AI request is bound to an authenticated user
+(and to any agent acting on their behalf), authorised against that user's roles, and recorded.
+Agents act only with the user's consent, and their access can be revoked at any time.
+
+| In scope | Out of scope |
+|---|---|
+| Identity-bound access to AI models, tools and data | AI use-case inventory and risk classification |
+| Delegated authority: an agent never exceeds the user it acts for | Policies, training, impact assessments |
+| Audit record for every access decision | Model testing and evaluation |
+| Revocation of agent access | Legal and regulatory advice |
+| Self-hosted, based on open standards | |
+
+SLATFF.Cloud does not make an organisation compliant. It provides the controls and the evidence
+a governance function relies on.
+
 ## Why identity
 
 Apps can be swapped; the directory and sign-in cannot, so that is where lock-in sits. A local
