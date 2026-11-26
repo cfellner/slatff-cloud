@@ -10,6 +10,9 @@ Host names come from .env (ID_HOST, AI_HOST). Nothing secret goes into these fil
   jamf-uninstall-ide-bridge.sh                   removes both
   xcode-coding-assistant-off.mobileconfig        test: CodingAssistantAllowExternalIntegrations = false
   xcode-on-device-models-off.mobileconfig        test: IDEProhibitOnDeviceModelInteraction = true (unverified key)
+  slatff-platform-sso.mobileconfig               Platform SSO with the Weblogin SSO extension (step 11),
+                                                 only when APPLE_TEAM_ID is set in .env
+  slatff-associated-domains.mobileconfig         authsrv:<ID_HOST> fetched directly by the Mac (no Apple CDN)
 
 Usage: python3 scripts/make-mdm-files.py [--ide xcode]
 """
@@ -148,6 +151,37 @@ echo "SLATFF IDE bridge removed"
         "Test profile: IDEProhibitOnDeviceModelInteraction = true (key not in Apple's public docs; effect unverified).",
         [payload("com.apple.dt.Xcode", "cloud.slatff.payload.xcode-on-device-models-off", "Xcode",
                  {"IDEProhibitOnDeviceModelInteraction": True})]))
+
+    # 4. Platform SSO with the University of Oslo Weblogin SSO extension (docs/PLATFORM-SSO.md).
+    #    Based on the example profile in the extension's wiki. Needs your Team ID and bundle ID.
+    team, bundle = e.get("APPLE_TEAM_ID", ""), e.get("WEBLOGIN_BUNDLE_ID") or "no.uio.WebloginSSO"
+    if not team:
+        print("skipped Platform SSO profiles: APPLE_TEAM_ID is empty in .env")
+        return
+    iss = f"https://{e['ID_HOST']}/realms/slatff"
+    write_plist("slatff-platform-sso.mobileconfig", profile(
+        "cloud.slatff.profile.platform-sso", "SLATFF Platform SSO",
+        "Mac sign-in with the SLATFF Keycloak account (Weblogin SSO extension, Secure Enclave key).",
+        [payload(f"{bundle}.ssoe", "cloud.slatff.payload.weblogin-ssoe", "Weblogin SSO extension", {}),
+         payload("com.apple.extensiblesso", "cloud.slatff.payload.platform-sso", "Platform SSO", {
+             "ExtensionIdentifier": f"{bundle}.ssoe",
+             "TeamIdentifier": team,
+             "Type": "Redirect",
+             "URLs": [f"{iss}/protocol/", f"{iss}/psso", f"{iss}/psso/token"],
+             "AuthenticationMethod": "UserSecureEnclaveKey",
+             "PlatformSSO": {"AccountDisplayName": "SLATFF.Cloud",
+                             "AuthenticationMethod": "UserSecureEnclaveKey",
+                             "EnableCreateUserAtLogin": True,
+                             "UseSharedDeviceKeys": True,
+                             "AllowDeviceIdentifiersInAttestation": True},
+             "ExtensionData": {"BaseURL": iss, "Issuer": iss, "Audience": "psso", "ClientID": "psso"}})]))
+    write_plist("slatff-associated-domains.mobileconfig", profile(
+        "cloud.slatff.profile.associated-domains", "SLATFF associated domain for Platform SSO",
+        "The Mac fetches apple-app-site-association from the id host directly, so the host can stay on the local network.",
+        [payload("com.apple.associated-domains", "cloud.slatff.payload.associated-domains", "Associated domains", {
+            "Configuration": [{"ApplicationIdentifier": f"{team}.{bundle}",
+                               "AssociatedDomains": [f"authsrv:{e['ID_HOST']}"],
+                               "EnableDirectDownloads": True}]})]))
 
 
 if __name__ == "__main__":

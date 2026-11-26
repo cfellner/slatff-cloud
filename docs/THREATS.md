@@ -31,6 +31,10 @@ history). SLATFF.Cloud is a proof of concept. This page lists what is open, not 
 | 16 | Labels fail open: only exact uppercase `CLASSIFICATION:` markers are checked | Enforce access at retrieval; treat labels as a second line |
 | 17 | No rate limit at the gateway; model list answered without a token | Rate limit per user; token for the model list from the IDE path |
 | 18 | Issued tokens cannot be revoked early (bridge 5 min, agent 120 s); no Shared Signals / CAEP | Shorter lifetimes where possible; SSF when Keycloak's transmitter is usable |
+| 19 | Step 11: the id host must be public for Apple (sign-in page and token endpoint on the internet) | Tunnel for the id host only; admin console and realm master stay blocked; passkeys or OTP for users |
+| 20 | Step 11: Keycloak SSF is experimental; Apple uses the older SSE CAEP profile | Watch Keycloak releases; re-test after upgrades |
+| 21 | Step 11: the University of Oslo Keycloak extension (GPL, third party) runs inside Keycloak; Weblogin SSO is built locally | Verified download (checksum, signature, signer key); review release notes before upgrading |
+| 22 | Step 11: Platform SSO registration without a registration token; device identifiers in attestation | Registration token or serial check for production |
 
 ## Checked and fine
 

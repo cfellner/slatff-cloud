@@ -147,7 +147,7 @@ Approve the agent on the consent screen. All lines PASS. Details: [AGENTS.md](AG
 | Files | `docker compose --profile files up -d` then `./scripts/setup-files.sh` | [FILES.md](FILES.md) |
 | Meetings | `LAN_IP` in `.env`, then `docker compose --profile meet up -d` | [MEET.md](MEET.md) |
 | Remote access | tunnel token in `.env`, DNS changes, `docker compose --profile tunnel up -d` | [REMOTE-ACCESS.md](REMOTE-ACCESS.md) |
-| Mac sign-in | `./scripts/get-psso-extension.sh`, realm, Mac extension, MDM | [PLATFORM-SSO.md](PLATFORM-SSO.md) |
+| Apple end to end | `bash scripts/mac-step11-apple.sh` (Platform SSO, ABM/ASM federation, Shared Signals) | [APPLE.md](APPLE.md) |
 
 ## 9. Operations
 

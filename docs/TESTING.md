@@ -114,6 +114,19 @@ Docker 29.9.3 / Compose v5.7.0, macOS 27.3, Apple M5 Max.
 - [x] Live: kill switch A (permission off, then refresh) and B (session ended) (26 Nov 2026)
 - [x] Live: bob refused, agent gets no roles for him (26 Nov 2026 09:39)
 
+## Apple end to end (step 11, docs/APPLE.md)
+
+- [ ] `get-psso-extension.sh` 0.58b passes all checks; Keycloak loads `psso-authenticator`
+- [ ] `kc-apply-psso.sh`: client psso, scope, required action, flow `browser-psso`, realm tab, psso-oidc
+- [ ] apple-app-site-association served with the right app ID
+- [ ] Weblogin SSO built and signed with own team; profiles installed by Jamf
+- [ ] Mac registers with Keycloak; registration visible in the account console
+- [ ] Unlock and (macOS 27) login window with the Keycloak account
+- [ ] `kc-apply-apple-business.sh`: SSF transmitter on, ssf-configuration reachable from the internet
+- [ ] Apple Business Manager connection test signs in through Keycloak; SSF stream created
+- [ ] Managed Apple Account signs in through Keycloak
+- [ ] Session end in Keycloak delivered to Apple (stream status, Keycloak log)
+
 ## Hardening (scripts/harden.sh, docs/THREATS.md)
 
 - [x] Master realm brute-force protection on (10 failures); personal admin signs in with authenticator app (26 Nov 2026 09:51)

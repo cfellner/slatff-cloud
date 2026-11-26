@@ -1,7 +1,7 @@
 # Platform SSO for Mac with Keycloak
 
 Mac sign-in (macOS 27: also FileVault unlock, lock screen, login window) through your Keycloak.
-Status: guide and verified download script; not run against a Mac yet.
+Status: scripts and profiles built (step 11); not run against a Mac yet.
 
 ## Components
 
@@ -12,25 +12,32 @@ Status: guide and verified download script; not run against a Mac yet.
 | MDM | any that installs a package and custom profiles | |
 
 Requirements (checked 10 Nov 2026): Keycloak 26.5+, PostgreSQL or MariaDB, feature
-`declarative-ui`. Latest extension release 0.50b (0.44b added the OpenID method used by macOS 27).
+`declarative-ui`. Extension version 0.58b (26 Nov 2026; 0.44b added the OpenID method used by macOS 27).
 
 ## Steps
 
-1. `./scripts/get-psso-extension.sh [version]`: downloads the jar, `.sha256` and `.sig`, checks
+Automated by `bash scripts/mac-step11-apple.sh psso` (part of [APPLE.md](APPLE.md)):
+
+1. `scripts/get-psso-extension.sh [version]`: downloads the jar, `.sha256` and `.sig`, checks
    the signer key against the maintainer's GitHub keys, verifies checksum and SSH signature,
    then copies the jar to `keycloak/providers/`. Installs nothing if a check fails.
-2. Copy `caddy/well-known/apple-app-site-association.example` to
-   `caddy/well-known/apple-app-site-association`; set your team ID and bundle IDs (`authsrv`
-   for the extension, `webcredentials` for the app). Served at
-   `https://<id host>/.well-known/apple-app-site-association`.
-3. `.env`: `KC_FEATURES=declarative-ui`, then `docker compose up -d keycloak`.
-4. Realm (per the extension wiki for your release):
-   - client scope `urn:apple:platformsso`
-   - public client `psso`, redirect URI `weblogin-sso://idp-login-redirect`, scope `urn:apple:platformsso`
-   - the extension's authenticator in the browser flow, directly under Cookie
-   - keep Revoke Refresh Token off
-5. Build Weblogin with your team and bundle IDs; associated domain `authsrv:<id host>`. Deploy
-   app and Platform SSO profile with your MDM.
+2. `KC_FEATURES` gets `declarative-ui`; Keycloak restarts.
+3. `scripts/kc-apply-psso.sh`, following the extension's wiki:
+   - client scope `urn:apple:platformsso`; public client `psso`, redirect URI
+     `weblogin-sso://idp-login-redirect`, optional `offline_access`, access token 8 hours
+   - required action `psso-required-action` enabled
+   - authenticator `psso-authenticator` in a copy of the browser flow (`browser-psso`), directly under Cookie
+   - realm tab "Platform Single Sign-on": registration token not required
+   - macOS 27 web-based method: confidential client `psso-oidc`, pushed authorization requests
+     required, scopes `urn:apple:platformsso:auth:*` optional
+   - Revoke Refresh Token stays off (the extension uses the refresh token for login)
+4. `caddy/well-known/apple-app-site-association` from `APPLE_TEAM_ID` and `WEBLOGIN_BUNDLE_ID`
+   (the app's ID under `authsrv` and `webcredentials`).
+5. `dist/mdm/slatff-platform-sso.mobileconfig` and `slatff-associated-domains.mobileconfig`
+   (profile based on the example in the Weblogin wiki: `UserSecureEnclaveKey`, shared device keys,
+   create user at login).
+6. Build Weblogin with your team and bundle IDs; associated domain `authsrv:<id host>`. Deploy
+   app and profiles with your MDM.
 
 ## Associated domain without internet access
 

@@ -26,6 +26,7 @@ Read in this order.
 | [MDM.md](MDM.md) | IDE bridge settings and install with Jamf; Xcode controls |
 | [IDES.md](IDES.md) | IDE support matrix, testers wanted |
 | [KNOWLEDGE-DEMO.md](KNOWLEDGE-DEMO.md) | Same assistant, different answers by group |
+| [APPLE.md](APPLE.md) | Apple end to end: ABM/ASM federation, Shared Signals, Platform SSO (step 11) |
 | [PLATFORM-SSO.md](PLATFORM-SSO.md) | Mac sign-in through Keycloak |
 | [FILES.md](FILES.md) | Nextcloud: files, calendars, contacts |
 | [MEET.md](MEET.md) | Jitsi meetings (experimental) |
