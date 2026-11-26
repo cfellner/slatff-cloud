@@ -10,10 +10,11 @@
 {$ID_HOST} {
 	import cloudflare
 	# Requests that arrive through the Cloudflare tunnel carry Cf-Connecting-Ip.
-	# The Keycloak admin console and admin API stay on the local network only.
+	# The Keycloak admin console, admin API and the master realm (admin sign-in) stay on the
+	# local network only.
 	@remote_admin {
 		header Cf-Connecting-Ip *
-		path /admin /admin/*
+		path /admin /admin/* /realms/master /realms/master/*
 	}
 	# Apple fetches this file (through its CDN) to trust the Platform SSO extension for this
 	# host. Create it from caddy/well-known/apple-app-site-association.example.

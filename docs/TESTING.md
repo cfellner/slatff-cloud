@@ -103,6 +103,28 @@ Docker 29.9.3 / Compose v5.7.0, macOS 27.3, Apple M5 Max.
 - [x] Passkey set up for alice in Safari (Touch ID, Apple Passwords); sign-in with passkey, no password (26 Nov 2026)
 - [ ] Passkey from another device (iPhone, hybrid)
 
+## Agents acting for a user (step 10)
+
+- [x] Offline gateway: 10 agent checks (allowed model, model not allowed for the agent, user without role, agent not in policy, agent alone, act/azp mismatch, may_act token, no tool calls, model list, audit with user and agent) (26 Nov 2026)
+- [x] Offline agent: fake Keycloak with the 26.8 delegation rules, real gateway; demo, kill switch, bob refused (26 Nov 2026; also on the Mac in Docker, python:3.12-slim)
+- [x] Live: features on, delegation scopes copied into the realm, clients and permission created, agent key in the Keychain (26 Nov 2026)
+- [x] Live: consent screen, user token with may_act, private_key_jwt sign-in (alice, 26 Nov 2026 09:36)
+- [x] Live: delegated token with act, gateway allows the agent's model and refuses the other, audit shows user and agent (26 Nov 2026)
+- [x] Live: refusals (agent alone, user token, no actor_token, rogue-agent, other key) (26 Nov 2026)
+- [x] Live: kill switch A (permission off, then refresh) and B (session ended) (26 Nov 2026)
+- [x] Live: bob refused, agent gets no roles for him (26 Nov 2026 09:39)
+
+## Hardening (scripts/harden.sh, docs/THREATS.md)
+
+- [x] Master realm brute-force protection on (10 failures); personal admin signs in with authenticator app (26 Nov 2026 09:51)
+- [x] Settings applied: slatff brute force 10, password policy, admin-cli password grant off, rogue-agent disabled (26 Nov 2026, read back by the script)
+- [ ] Password grant refused for admin-cli in slatff (curl returns unauthorized_client)
+- [ ] Password policy rejects a short password
+- [ ] Step 10 still passes with rogue-agent off between runs
+- [ ] Through the tunnel: /realms/master returns 403
+
+## Files
+
 
 - [ ] Profile starts (check `NEXTCLOUD_TAG` exists)
 - [ ] `setup-files.sh` configures `user_oidc`

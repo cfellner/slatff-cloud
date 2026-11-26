@@ -1,0 +1,17 @@
+# Step 10, agents acting for a user (docs/AGENTS.md): offline test of the demo agent against a
+# fake Keycloak with the 26.8 delegation rules and the real model gateway.
+name: agents
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  agent:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Offline tests (fake Keycloak, real gateway)
+        run: |
+          pip install --quiet "aiohttp>=3.9,<4" "PyJWT[crypto]>=2.8,<3"
+          bash agents/tests/run.sh

@@ -60,6 +60,7 @@ Keycloak  Open WebUI   Nextcloud    Jitsi        (Nextcloud, Jitsi optional)
 | Cloudflare tunnel (`--profile tunnel`) | Remote access | Not run yet ([docs](docs/REMOTE-ACCESS.md)) |
 | App-to-app (ID-JAG) | App A gets app B access for the user; the IdP decides (IETF draft) | Live 25 Nov 2026, Keycloak 26.8.2 ([docs](docs/APP-TO-APP.md)) |
 | Passkeys and DPoP | Passwordless sign-in; IDE bridge tokens bound to a key (RFC 9449) | Tested 26 Nov 2026 ([docs](docs/PASSKEYS-DPOP.md)) |
+| Agents acting for a user | Token names user and agent (`act`); gateway checks both; kill switch | Live 26 Nov 2026, Keycloak 26.8.2, one hop ([docs](docs/AGENTS.md)) |
 | Platform SSO | Mac sign-in through Keycloak (University of Oslo extension) | Not run yet ([docs](docs/PLATFORM-SSO.md)) |
 
 Only what is ticked in [docs/TESTING.md](docs/TESTING.md) counts as working.

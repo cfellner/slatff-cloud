@@ -22,6 +22,7 @@ Read in this order.
 | [IDE-BRIDGE.md](IDE-BRIDGE.md) | Xcode and other IDEs as the signed-in user (step 6) |
 | [APP-TO-APP.md](APP-TO-APP.md) | App-to-app access with ID-JAG (step 8) |
 | [PASSKEYS-DPOP.md](PASSKEYS-DPOP.md) | Passkeys for people, DPoP-bound tokens for the IDE bridge (step 9) |
+| [AGENTS.md](AGENTS.md) | An agent acting for a user: act claim, consent, kill switch (step 10) |
 | [MDM.md](MDM.md) | IDE bridge settings and install with Jamf; Xcode controls |
 | [IDES.md](IDES.md) | IDE support matrix, testers wanted |
 | [KNOWLEDGE-DEMO.md](KNOWLEDGE-DEMO.md) | Same assistant, different answers by group |
@@ -36,4 +37,5 @@ Read in this order.
 |---|---|
 | [../CONTRIBUTING.md](../CONTRIBUTING.md) | How to help, tests, rules |
 | [TESTING.md](TESTING.md) | What is tested and when. Only ticked items count as working. |
+| [THREATS.md](THREATS.md) | Security review: fixed, open, checked |
 | [PROVENANCE.md](PROVENANCE.md) | Sources and how this repo was built |

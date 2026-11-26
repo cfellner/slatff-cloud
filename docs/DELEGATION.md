@@ -71,10 +71,12 @@ expires with the subject token; no refresh token by default.
 | `awk: command not found` in Keycloak setup | The Keycloak image has no awk/cut/tr; scripts use plain bash |
 | Container restarts, `Permission denied` on `/app/*.py` | Files were mode 600; Dockerfiles use `COPY --chmod=755` (644 locks the `/app` folder) |
 
-## Next: step 7, full RFC 8693 delegation (planned)
+## Next: full RFC 8693 delegation
+
+Agents acting for a user with `actor_token` and `act`: done as step 10 ([AGENTS.md](AGENTS.md)). Still open for tool calls:
 
 1. Require `issued_token_type` and `token_type` in the exchange response.
-2. Send `actor_token` (gateway's own token) so the new token carries `act`. Keycloak supports this only in a preview feature; test on 26.5 first.
+2. Send `actor_token` (gateway's own token) so the new token carries `act`. Keycloak 26.8 needs `may_act` in the user's token for this, so the user would approve `model-gateway` at sign-in (scope `delegation:client:model-gateway` in Open WebUI).
 3. kb-tool requires and logs `act.sub`; gateway refuses unexpected `act`.
 4. Nested `act` once there is a second hop.
 5. Conformance table: RFC section, implementation, test.
