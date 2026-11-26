@@ -93,6 +93,29 @@ t 401 "client that must use DPoP sends an unbound token" $U -H "Authorization: B
 t 200 "other clients may still use Bearer (Open WebUI)" $U -H "Authorization: Bearer $A" -d "$P"
 grep -q '"dpop": true' audit/audit.jsonl && echo "PASS audit records dpop true" || { echo "FAIL audit dpop"; fail=1; }
 
+echo "--- agents acting for a user (act claim, step 10)"
+P3='{"model":"llama3.2:3b","messages":[{"role":"user","content":"hi"}]}'
+ACTJ='{"sub":"sa-research","client_id":"research-agent"}'
+AG=$(ACT=$ACTJ AZP=research-agent python3 mint.py alice ai-user)
+t 200 "research-agent for alice, allowed model" $U -H "Authorization: Bearer $AG" -d "$P3"
+t 403 "research-agent for alice, model not allowed for the agent" $U -H "Authorization: Bearer $AG" -d "$P"
+AGB=$(ACT=$ACTJ AZP=research-agent python3 mint.py bob "")
+t 403 "research-agent for bob (user has no role)" $U -H "Authorization: Bearer $AGB" -d "$P3"
+RG=$(ACT='{"sub":"sa-rogue","client_id":"rogue-agent"}' AZP=rogue-agent python3 mint.py alice ai-user)
+t 403 "agent not in the policy" $U -H "Authorization: Bearer $RG" -d "$P3"
+ALONE=$(AZP=research-agent python3 mint.py service-account-research-agent ai-user)
+t 403 "research-agent on its own, no user (no act)" $U -H "Authorization: Bearer $ALONE" -d "$P3"
+MIS=$(ACT=$ACTJ AZP=other-client python3 mint.py alice ai-user)
+t 401 "act names another client than azp" $U -H "Authorization: Bearer $MIS" -d "$P3"
+MAY=$(MAY_ACT=$ACTJ AZP=agent-console python3 mint.py alice ai-user)
+t 401 "user token still carrying may_act" $U -H "Authorization: Bearer $MAY" -d "$P3"
+t 403 "agent token cannot call tools (no second hop)" $T -H "Authorization: Bearer $AG" -d "$Q"
+curl -s localhost:8080/v1/models -H "Authorization: Bearer $AG" | grep -q 'llama3.2:3b' \
+  && ! curl -s localhost:8080/v1/models -H "Authorization: Bearer $AG" | grep -q 'llama3.2:1b' \
+  && echo "PASS agent sees only its models" || { echo "FAIL agent model list"; fail=1; }
+grep '"act": \["research-agent"\]' audit/audit.jsonl | grep -q '"user": "alice"' \
+  && echo "PASS audit names user and agent" || { echo "FAIL audit act"; fail=1; }
+
 echo "--- evidence chain"
 python3 - <<'PY' && echo "PASS gateway and tool audit lines join on correlation ID and token ID" || { echo "FAIL evidence chain"; fail=1; }
 import json

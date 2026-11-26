@@ -24,6 +24,13 @@ the access decision at the model boundary, independent of the chat application:
    method and URL, recent, not replayed. A copied token alone is refused. Clients listed in
    DPOP_REQUIRED_CLIENTS must use bound tokens.
 
+7. Agents acting for a user (RFC 8693 delegation, Keycloak 26.8 preview): a token with an
+   "act" claim was issued to an agent for the user in "sub". Both must be allowed: the user's
+   roles decide as usual, and policy.json "agents" lists the agents and the models each may
+   use for a user. An agent in that list may not call the gateway on its own (no "act"), and a
+   token that still carries "may_act" (the user's grant to the agent) is refused. The audit
+   line names the user and the agent.
+
 Model listing (GET /v1/models) is answered without a token so the chat application can
 build its model list; with a token the list is filtered to what that user may use.
 """
@@ -75,6 +82,8 @@ def policy():
             d = _policy["data"]
             log.info("policy loaded: %d models, %d labels, %d tools", len(d.get("models", {})),
                      len(d.get("labels", {})), len(d.get("tools", {})))
+            if d.get("agents"):
+                log.info("policy: %d agents", len(d["agents"]))
     except Exception as e:  # keep the last good policy, or deny everything if none
         log.error("policy load failed: %s", e)
     return _policy["data"]
@@ -183,7 +192,40 @@ def who(claims):
         "roles": sorted(r for r in roles_of(claims) if not r.startswith("default-roles")),
         "groups": claims.get("groups"),
         "dpop": bool((claims.get("cnf") or {}).get("jkt")),
+        **({"act": actor_chain(claims)} if claims.get("act") else {}),
     }
+
+
+def actor_chain(claims):
+    """Actors in "act", outermost (the one presenting the token) first."""
+    chain, a = [], claims.get("act")
+    while isinstance(a, dict) and len(chain) < 5:
+        chain.append(a.get("client_id") or a.get("sub"))
+        a = a.get("act")
+    return chain
+
+
+def agent_check(claims, model=None):
+    """(status, reason) if the agent part of the token is not allowed, else None."""
+    agents = policy().get("agents", {})
+    if "may_act" in claims:
+        return 401, "token carries may_act: it is the user's grant to an agent, not an access token"
+    act = claims.get("act")
+    if act is None:
+        if claims.get("azp") in agents:
+            return 403, f"agent '{claims['azp']}' may only act for a user (token has no act claim)"
+        return None
+    if not isinstance(act, dict) or not (act.get("client_id") or act.get("sub")):
+        return 401, "malformed act claim"
+    actor = act.get("client_id") or act.get("sub")
+    if act.get("client_id") and act["client_id"] != claims.get("azp"):
+        return 401, "act claim does not match the client presenting the token"
+    rule = agents.get(actor)
+    if not rule:
+        return 403, f"agent '{actor}' is not allowed to act for users"
+    if model is not None and model not in rule.get("models", []):
+        return 403, f"agent '{actor}' may not use model '{model}'"
+    return None
 
 
 def allows(rule, roles):
@@ -220,6 +262,8 @@ async def list_models(request):
     if claims:
         roles = roles_of(claims)
         data = [m for m in data if allows(pol.get(m["id"]), roles)]
+        if claims.get("act") or "may_act" in claims:
+            data = [m for m in data if not agent_check(claims, m["id"])]
     return web.json_response({"object": "list", "data": data})
 
 
@@ -242,6 +286,9 @@ async def inference(request):
     pol = policy()
     if not allows(pol.get("models", {}).get(model), roles):
         return deny(403, f"user '{record['user']}' may not use model '{model}'", record)
+    refused = agent_check(claims, model)
+    if refused:
+        return deny(*refused, record)
     text = prompt_text(body)
     labels = sorted(set(LABEL_RE.findall(text)))
     record.update(labels=labels, prompt_chars=len(text), messages=len(body.get("messages") or []))
@@ -306,6 +353,11 @@ async def tool_call(request):
     if not claims:
         return deny(401, f"a valid Keycloak token is required ({why})", record)
     record["subject_jti"] = claims.get("jti")
+    refused = agent_check(claims)
+    if refused:
+        return deny(*refused, record)
+    if claims.get("act"):   # Keycloak's standard exchange refuses subject tokens with act
+        return deny(403, "agents cannot call tools through the gateway yet (no second delegation hop)", record)
     tool = policy().get("tools", {}).get(name) if TOOL_RE.match(name) else None
     if not tool:
         return deny(403, f"tool '{name}' is not in the policy", record)

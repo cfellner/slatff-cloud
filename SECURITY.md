@@ -6,3 +6,5 @@ Report a security problem privately: on GitHub, open the **Security** tab and ch
 **Report a vulnerability**. Do not open a public issue.
 
 Never include tokens, keys or passwords in a report.
+
+Known open issues and what was fixed: [docs/THREATS.md](docs/THREATS.md).

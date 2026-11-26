@@ -132,6 +132,14 @@ bash scripts/mac-step9-passkeys-dpop.sh
 
 Then follow the steps it prints. Details: [PASSKEYS-DPOP.md](PASSKEYS-DPOP.md).
 
+## 7d. Agents acting for a user
+
+```sh
+bash scripts/mac-step10-agents.sh
+```
+
+Approve the agent on the consent screen. All lines PASS. Details: [AGENTS.md](AGENTS.md).
+
 ## 8. Optional
 
 | Part | Start | Docs |
