@@ -21,23 +21,24 @@ behalf, audit. Each part uses an open standard, so it can be replaced.
 
 | Standard | Used for | Status |
 |---|---|---|
-| OpenID Connect Core 1.0 | Sign-in, ID tokens | Live |
-| RFC 6749 OAuth 2.0 | Access and refresh tokens | Live |
-| RFC 7519 JWT | Tokens checked by gateway and tool | Live |
-| RFC 7636 PKCE | IDE bridge device sign-in; agent-console browser sign-in | Tested 25 Nov 2026 (bridge), 26 Nov 2026 (agent-console) |
-| RFC 8252 OAuth for native apps | Agent sign-in in the browser with a loopback redirect (127.0.0.1) | Tested 26 Nov 2026 |
-| RFC 8628 Device Authorization Grant | IDE bridge sign-in | Tested 25 Nov 2026 |
-| RFC 7009 Token Revocation | IDE bridge logout ends the session | Tested 25 Nov 2026 |
-| RFC 9449 DPoP | IDE bridge tokens bound to a key; gateway checks the proof | Tested 26 Nov 2026 (Xcode through the bridge; key in Keychain, not Secure Enclave) |
-| WebAuthn / FIDO2 passkeys | People sign in without a password | Tested 26 Nov 2026 (Touch ID in Safari, Apple Passwords) |
-| RFC 7523 JWT Authorization Grant | App B redeems the ID-JAG (Keycloak receiver) | Tested 25 Nov 2026 |
-| RFC 7523 client authentication (`private_key_jwt`) | Agent signs in with its own key, no secret | Tested 26 Nov 2026 (key in Keychain, not Secure Enclave) |
-| RFC 8693 Token Exchange | Per-tool token for AI tool calls; agent acting for a user | Tool calls: audience and scope narrowed, no `act` ([DELEGATION.md](DELEGATION.md)). Agents: `actor_token` and `act`, one hop, tested 26 Nov 2026 ([AGENTS.md](AGENTS.md)) |
-| draft-ietf-wimse-aims | Agent identity model (IETF draft) | Read; not implemented |
-| draft-ietf-oauth-identity-assertion-authz-grant-06 (ID-JAG) | App-to-app access for agents | Issuer tested 25 Nov 2026 (request, claims, typ, policy, errors). Receiver is Keycloak's, based on draft -01: takes scope from the request, not the ID-JAG. Not done: IdP metadata, refresh token or SAML subject, tenant, DPoP |
+| [OpenID Connect Core 1.0](https://openid.net/specs/openid-connect-core-1_0.html) | Sign-in, ID tokens | Live |
+| [RFC 6749](https://www.rfc-editor.org/rfc/rfc6749) OAuth 2.0 | Access and refresh tokens | Live |
+| [RFC 7519](https://www.rfc-editor.org/rfc/rfc7519) JWT | Tokens checked by gateway and tool | Live |
+| [RFC 7636](https://www.rfc-editor.org/rfc/rfc7636) PKCE | IDE bridge device sign-in; agent-console browser sign-in | Tested 25 Nov 2026 (bridge), 26 Nov 2026 (agent-console) |
+| [RFC 8252](https://www.rfc-editor.org/rfc/rfc8252) OAuth for native apps | Agent sign-in in the browser with a loopback redirect (127.0.0.1) | Tested 26 Nov 2026 |
+| [RFC 8628](https://www.rfc-editor.org/rfc/rfc8628) Device Authorization Grant | IDE bridge sign-in | Tested 25 Nov 2026 |
+| [RFC 7009](https://www.rfc-editor.org/rfc/rfc7009) Token Revocation | IDE bridge logout ends the session | Tested 25 Nov 2026 |
+| [RFC 9449](https://www.rfc-editor.org/rfc/rfc9449) DPoP | IDE bridge tokens bound to a key; gateway checks the proof | Tested 26 Nov 2026 (Xcode through the bridge; key in Keychain, not Secure Enclave) |
+| [RFC 7638](https://www.rfc-editor.org/rfc/rfc7638) JWK Thumbprint | Key binding in DPoP (`cnf.jkt`) and the agent's key id | Tested 26 Nov 2026 (with DPoP and step 10) |
+| [WebAuthn](https://www.w3.org/TR/webauthn/) / FIDO2 passkeys | People sign in without a password | Tested 26 Nov 2026 (Touch ID in Safari, Apple Passwords) |
+| [RFC 7523](https://www.rfc-editor.org/rfc/rfc7523) JWT Authorization Grant | App B redeems the ID-JAG (Keycloak receiver) | Tested 25 Nov 2026 |
+| [RFC 7523](https://www.rfc-editor.org/rfc/rfc7523) client authentication (`private_key_jwt`) | Agent signs in with its own key, no secret | Tested 26 Nov 2026 (key in Keychain, not Secure Enclave) |
+| [RFC 8693](https://www.rfc-editor.org/rfc/rfc8693) Token Exchange | Per-tool token for AI tool calls; agent acting for a user | Tool calls: audience and scope narrowed, no `act` ([DELEGATION.md](DELEGATION.md)). Agents: `actor_token` and `act`, one hop, tested 26 Nov 2026 ([AGENTS.md](AGENTS.md)) |
+| [draft-ietf-wimse-aims](https://datatracker.ietf.org/doc/draft-ietf-wimse-aims/) | Agent identity model (IETF draft) | Read; not implemented |
+| [draft-ietf-oauth-identity-assertion-authz-grant-06](https://datatracker.ietf.org/doc/draft-ietf-oauth-identity-assertion-authz-grant/) (ID-JAG) | App-to-app access for agents | Issuer tested 25 Nov 2026 (request, claims, typ, policy, errors). Receiver is Keycloak's, based on draft -01: takes scope from the request, not the ID-JAG. Not done: IdP metadata, refresh token or SAML subject, tenant, DPoP |
 
 "Live" and "Tested" mean ticked in [TESTING.md](TESTING.md) with a date. Nothing here is
 certified; "compliant" is only claimed where a row says Tested and the spec's required parts
 are covered.
 
-Known security gaps and what was hardened: [THREATS.md](THREATS.md).
+Known security gaps and what was hardened: [THREATS.md](THREATS.md). Sources and credits: [PROVENANCE.md](PROVENANCE.md).

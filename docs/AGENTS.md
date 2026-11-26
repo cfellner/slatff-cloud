@@ -6,7 +6,8 @@ agent may. The user approves the agent at sign-in, and an admin can stop it.
 
 Standards: RFC 8693 Token Exchange with `actor_token` and the `act` claim; RFC 7523 client
 authentication with a private key (`private_key_jwt`); RFC 7636 PKCE; RFC 8252 loopback redirect.
-Keycloak 26.8 preview features `token-exchange-delegation` and `parameterized-scopes`.
+Keycloak 26.8 preview features `token-exchange-delegation` and `parameterized-scopes`
+([Keycloak token exchange guide](https://www.keycloak.org/securing-apps/token-exchange)). Links to all standards: [STANDARDS.md](STANDARDS.md).
 
 ## Flow
 

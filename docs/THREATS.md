@@ -36,7 +36,8 @@ history). SLATFF.Cloud is a proof of concept. This page lists what is open, not 
 
 - Git history: no private keys, tokens, secrets, LAN addresses or real host names.
 - `.env` and `backups/` are mode 600 and ignored by git; secrets are generated randomly.
-- Keycloak 26.8.2 is the current release (5 Nov 2026, 33 security fixes). Keycloak lists most
-  CVEs in release notes, not in GitHub advisories: watch the release notes.
-- CVE-2026-97846 (standard token exchange drops mTLS binding) needs mTLS-bound clients; none here.
+- Keycloak 26.8.2 is the current release ([release notes](https://www.keycloak.org/2026/11/keycloak-2682-released), 5 Nov 2026,
+  33 security fixes per [Keycloak Advisory Watch](https://buttondown.com/keycloak-advisory-watch/archive/keycloak-security-fixes-in-2682-8042/)).
+  Keycloak lists most CVEs in release notes, not in GitHub advisories: watch the release notes.
+- [CVE-2026-97846](https://access.redhat.com/security/cve/CVE-2026-97846) (standard token exchange drops mTLS binding) needs mTLS-bound clients; none here.
 - Only port 443 (Caddy) and, with the meet profile, 10000/udp (Jitsi) are published.
