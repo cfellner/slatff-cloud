@@ -81,5 +81,22 @@ t 403 "serve starts without sign-in and refuses with a reason" localhost:11436/v
 has "not signed in" "message tells the user to sign in"
 grep -q "$K3" bridge2.log && { echo "FAIL key written to the log"; fail=1; } || echo "PASS key not written to a non-terminal log"
 kill $B2 2>/dev/null
+echo "--- part B: settings from MDM (managed preferences)"
+M=$W/managed; mkdir -p "$M/$(id -un)"
+python3 - "$M" "$(id -un)" <<'PY2'
+import plistlib, sys
+base, user = sys.argv[1], sys.argv[2]
+plistlib.dump({"Issuer": "https://id.managed.example/realms/slatff", "IDE": "xcode", "Port": 11500},
+              open(f"{base}/cloud.slatff.ide-bridge.plist", "wb"))
+plistlib.dump({"IDE": "xcode-user-scope"}, open(f"{base}/{user}/cloud.slatff.ide-bridge.plist", "wb"))
+PY2
+OUT=$(SLATFF_MANAGED_DIR=$M SLATFF_CONFIG_DIR=$C SLATFF_ISSUER=https://user.example SLATFF_TOKEN_STORE=file python3 bridge.py config)
+echo "$OUT" | grep -E "^issuer .*id.managed.example.*managed" >/dev/null && echo "PASS managed issuer wins over the environment" || { echo "FAIL managed issuer: $OUT"; fail=1; }
+echo "$OUT" | grep -E "^ide .*xcode-user-scope .*managed" >/dev/null && echo "PASS user-scope managed setting wins over device scope" || { echo "FAIL user scope: $OUT"; fail=1; }
+echo "$OUT" | grep -E "^port .*11500 .*managed" >/dev/null && echo "PASS managed port" || { echo "FAIL managed port: $OUT"; fail=1; }
+echo "$OUT" | grep -E "^gateway .*-.*default" >/dev/null && echo "PASS unmanaged setting falls back" || { echo "FAIL fallback: $OUT"; fail=1; }
+CO=$(SLATFF_MANAGED_DIR=$M SLATFF_CONFIG_DIR=$C SLATFF_TOKEN_STORE=file python3 bridge.py configure --issuer https://mine.example --gateway https://gw.example/gateway/v1)
+echo "$CO" | grep -q "not changed: issuer is set by your organisation" && grep -q gw.example "$C/ide-bridge.json" && ! grep -q mine.example "$C/ide-bridge.json" \
+  && echo "PASS configure keeps managed settings, saves the others" || { echo "FAIL configure: $CO"; fail=1; }
 SLATFF_TOKEN_STORE=auto python3 bridge.py selftest-store && echo "PASS OS secret store on this machine" || { echo "FAIL secret store"; fail=1; }
 exit $fail

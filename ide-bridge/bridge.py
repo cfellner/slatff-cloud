@@ -31,6 +31,7 @@ Python 3.9+ standard library only. Commands:
   python3 bridge.py serve       run for the IDE (prints the settings to enter)
   python3 bridge.py logout      end the session at Keycloak and remove the refresh token
   python3 bridge.py key         show the local key;  key new   create a new one
+  python3 bridge.py config      effective settings and their source (MDM, environment, config file)
   python3 bridge.py agent install | uninstall | status    macOS LaunchAgent
   python3 bridge.py selftest-store   check the secret store on this computer (used by CI)
 """
@@ -75,12 +76,59 @@ def load_config():
         return {}
 
 
+MANAGED_DOMAIN = "cloud.slatff.ide-bridge"
+# managed preference key -> (config key, environment variable)
+MANAGED_KEYS = {"Issuer": ("issuer", "SLATFF_ISSUER"), "Gateway": ("gateway", "SLATFF_GATEWAY"),
+                "ClientID": ("client_id", "SLATFF_CLIENT_ID"), "Port": ("port", "SLATFF_BRIDGE_PORT"),
+                "IDE": ("ide", "SLATFF_IDE")}
+
+
+def load_managed():
+    """Settings pushed by MDM (configuration profile, domain cloud.slatff.ide-bridge).
+    macOS writes them to /Library/Managed Preferences (device) and
+    /Library/Managed Preferences/<user> (user). They win over environment and config file."""
+    base = os.environ.get("SLATFF_MANAGED_DIR") or ("/Library/Managed Preferences" if SYSTEM == "Darwin" else "")
+    if not base:
+        return {}
+    import getpass
+    import plistlib
+    out = {}
+    for path in (os.path.join(base, f"{MANAGED_DOMAIN}.plist"),
+                 os.path.join(base, getpass.getuser(), f"{MANAGED_DOMAIN}.plist")):   # user scope wins
+        try:
+            with open(path, "rb") as f:
+                d = plistlib.load(f)
+        except Exception:
+            continue
+        for k, (ck, _) in MANAGED_KEYS.items():
+            if k in d and str(d[k]).strip():
+                out[ck] = str(d[k]).strip()
+    return out
+
+
 _cfg = load_config()
-ISSUER = (os.environ.get("SLATFF_ISSUER") or _cfg.get("issuer", "")).rstrip("/")
-GATEWAY = (os.environ.get("SLATFF_GATEWAY") or _cfg.get("gateway", "")).rstrip("/")
-CLIENT_ID = os.environ.get("SLATFF_CLIENT_ID") or _cfg.get("client_id", "ide-bridge")
-PORT = int(os.environ.get("SLATFF_BRIDGE_PORT") or _cfg.get("port", 11435))
-IDE = os.environ.get("SLATFF_IDE") or _cfg.get("ide", "unspecified")
+_managed = load_managed()
+
+
+def setting(key, env, default):
+    """Managed preference, then environment, then config file, then default."""
+    if key in _managed:
+        return _managed[key], "managed"
+    if os.environ.get(env):
+        return os.environ[env], "environment"
+    if key in _cfg and str(_cfg[key]).strip():
+        return str(_cfg[key]), "config file"
+    return default, "default"
+
+
+SOURCES = {}
+for _k, (_ck, _env) in MANAGED_KEYS.items():
+    SOURCES[_ck] = setting(_ck, _env, {"client_id": "ide-bridge", "port": "11435", "ide": "unspecified"}.get(_ck, ""))
+ISSUER = SOURCES["issuer"][0].rstrip("/")
+GATEWAY = SOURCES["gateway"][0].rstrip("/")
+CLIENT_ID = SOURCES["client_id"][0]
+PORT = int(SOURCES["port"][0])
+IDE = SOURCES["ide"][0]
 SERVICE = "slatff-ide-bridge"
 TOKEN_STORE = os.environ.get("SLATFF_TOKEN_STORE", "auto")      # auto | memory | file (tests)
 AGENT_LABEL = "cloud.slatff.ide-bridge"
@@ -608,13 +656,24 @@ def configure(args):
     it = iter(args)
     for a in it:
         if a in ("--issuer", "--gateway", "--ide", "--port", "--client-id"):
-            cfg[a[2:].replace("-", "_")] = next(it, "")
+            key, value = a[2:].replace("-", "_"), next(it, "")
+            if key in _managed:
+                print(f"not changed: {key} is set by your organisation (MDM) to {_managed[key]}")
+                continue
+            cfg[key] = value
     if "port" in cfg:
         cfg["port"] = int(cfg["port"])
     os.makedirs(config_dir(), exist_ok=True)
     with open(CONFIG_FILE, "w") as f:
         json.dump(cfg, f, indent=2)
     print(f"saved {CONFIG_FILE}: {cfg}")
+
+
+def show_config():
+    """Effective settings and where each comes from."""
+    for key, (value, source) in SOURCES.items():
+        print(f"{key:10} {value or '-':55} {source}")
+    print(f"{'token':10} {store.describe()}")
 
 
 def show_key(args):
@@ -635,6 +694,10 @@ def agent(args):
     sub = args[0] if args else "status"
     plist = os.path.expanduser(f"~/Library/LaunchAgents/{AGENT_LABEL}.plist")
     domain = f"gui/{os.getuid()}"
+    org_plist = f"/Library/LaunchAgents/{AGENT_LABEL}.plist"
+    if sub in ("install", "uninstall") and os.path.exists(org_plist):
+        die(f"The bridge agent is installed by your organisation ({org_plist}). "
+            "It starts at login for every user; nothing to install here.")
     if sub == "status":
         r = subprocess.run(["launchctl", "print", f"{domain}/{AGENT_LABEL}"], capture_output=True, text=True)
         if r.returncode != 0:
@@ -709,6 +772,9 @@ if __name__ == "__main__":
         selftest_store()
     if cmd == "key":
         show_key(sys.argv[2:])
+        sys.exit(0)
+    if cmd == "config":
+        show_config()
         sys.exit(0)
     if not ISSUER or not GATEWAY:
         die("Not configured. Run: python3 bridge.py configure --issuer https://id.<domain>/realms/slatff "

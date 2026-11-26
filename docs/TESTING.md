@@ -60,7 +60,7 @@ Docker 29.9.3 / Compose v5.7.0, macOS 27.3, Apple M5 Max.
 - [ ] Qt Creator (parked: testers wanted, see IDES.md)
 - [x] bob (no role): Keycloak device sign-in succeeds, gateway returns an empty model list, Xcode shows "Unable to load models" (25 Nov 2026)
 - [x] Session ended in Keycloak (admin console sign-out): bridge detects it within 4 min, Xcode requests refused (25 Nov 2026)
-- [x] Offline: `bash ide-bridge/tests/run.sh` passes 35 checks incl. stable key and start without sign-in (25 Nov 2026)
+- [x] Offline: `bash ide-bridge/tests/run.sh` passes 40 checks incl. stable key, start without sign-in, managed settings (25 Nov 2026)
 - [x] Local key unchanged after an agent restart; Xcode kept working without a new key (25 Nov 2026)
 - [x] `agent install`: agent running, signed in as carol, Xcode chat answered with llama3.2:3b (25 Nov 2026)
 - [ ] Agent still running after logout/login of the Mac user
@@ -71,7 +71,7 @@ Docker 29.9.3 / Compose v5.7.0, macOS 27.3, Apple M5 Max.
 ## App-to-app access, ID-JAG (step 8)
 
 - [x] Offline: `bash app-to-app/tests/run.sh` (fake IdP and app B, real notes API) (25 Nov 2026)
-- [ ] CI builds the extension against Keycloak 26.8.2
+- [x] CI builds the extension against Keycloak 26.8.2 (PR #3, 25 Nov 2026)
 - [x] Keycloak upgrade 26.5 to 26.8.2, database backup taken (25 Nov 2026)
 - [x] Steps 5, 6 and 8 re-run on 26.8.2: all PASS (25 Nov 2026, 12:06)
 - [x] Extension loaded (Keycloak log names `slatff-id-jag`) (25 Nov 2026)
@@ -79,6 +79,19 @@ Docker 29.9.3 / Compose v5.7.0, macOS 27.3, Apple M5 Max.
 - [x] Live refusals: reuse, other client, tampered, untrusted audience, two audiences, access token as subject, resource not allowed, IdP token at notes-api (25 Nov 2026)
 - [x] Live as bob: `access_denied` (user does not have role ai-user) (25 Nov 2026)
 - [x] Known gap confirmed: Keycloak as app B granted notes.write although the ID-JAG carried only notes.read (25 Nov 2026)
+
+## IDE bridge with MDM (part B, steps 3 and 4)
+
+- [ ] `make-mdm-files.py` output: profiles upload to Jamf without errors
+- [ ] Settings profile installed: `bridge.py config` shows issuer, gateway, IDE as `managed`
+- [ ] `configure --issuer ...` does not change a managed setting
+- [ ] Jamf install script: bridge in `/Library/Application Support/SLATFF`, agent running for the console user, user agent replaced
+- [ ] User signs in once, Xcode works through the managed bridge
+- [ ] `agent install` as user refused while the organisation's agent is installed
+- [ ] Uninstall script removes both
+- [ ] `CodingAssistantAllowExternalIntegrations` false: what Xcode shows, provider, agents
+- [ ] `IDEProhibitOnDeviceModelInteraction` true: effect, if any
+- [ ] Can MDM preset the chat provider or "Allow external agents"? (no documented key yet)
 
 ## Files
 
