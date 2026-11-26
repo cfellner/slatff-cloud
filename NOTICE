@@ -16,6 +16,20 @@ redistribute the software it configures:
   jitsi-keycloak-adapter-v2, Nordeck (Apache-2.0)
     https://github.com/nordeck/jitsi-keycloak-adapter-v2
 
+  Nextcloud server (AGPL-3.0)              https://github.com/nextcloud/server
+  Nextcloud user_oidc (AGPL-3.0)           https://github.com/nextcloud/user_oidc
+  cloudflared (Apache-2.0)                 https://github.com/cloudflare/cloudflared
+  Python container image (PSF and others)  https://hub.docker.com/_/python
+  aiohttp (Apache-2.0)                     https://github.com/aio-libs/aiohttp
+  PyJWT (MIT)                              https://github.com/jpadilla/pyjwt
+  cryptography (Apache-2.0 or BSD-3-Clause) https://github.com/pyca/cryptography
+  curl container image (curl licence)      https://github.com/curl/curl-container
+
+Models pulled by the setup scripts, not included:
+
+  Llama 3.2 by Meta (Llama 3.2 Community License)
+    https://www.llama.com/llama3_2/license/
+
 Referenced but not included:
 
   keycloak-psso-extension, University of Oslo (GPL-2.0-or-later)

@@ -29,7 +29,7 @@ are the interfaces, so each part can be replaced. What is covered and tested:
 | Operations | One machine with Docker; you run upgrades yourself |
 | Five-year cost incl. people | Not measured. PoC of the technical layer; change management not covered |
 
-Questions from Lothar Zeitler's ForFoxes series on the sovereign workplace.
+Questions from Lothar Zeitler's ForFoxes series on the sovereign workplace ([conclusion](https://forfoxes.ninja/souveraener-arbeitsplatz-bausteine-statt-big-tech-bundle-das-fazit/), all parts in [PROVENANCE.md](docs/PROVENANCE.md)).
 
 ## Components
 
@@ -107,4 +107,4 @@ Open `https://ai.<domain>`. Sign in as `carol` first (Open WebUI makes the first
 Apache 2.0 ([LICENSE](LICENSE), [NOTICE](NOTICE)). Components keep their own licences. The
 University of Oslo Platform SSO extension (GPL-2.0-or-later) is not included; the script
 downloads it from its project. Not affiliated with Apple, the University of Oslo, Cloudflare
-or any other project named here. How this repository was built: [docs/PROVENANCE.md](docs/PROVENANCE.md).
+or any other project named here. Sources, credits and how this repository was built: [docs/PROVENANCE.md](docs/PROVENANCE.md).
