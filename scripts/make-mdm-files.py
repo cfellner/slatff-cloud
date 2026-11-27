@@ -9,7 +9,7 @@ Host names come from .env (ID_HOST, AI_HOST). Nothing secret goes into these fil
   jamf-install-ide-bridge.sh                     Jamf policy script: bridge.py + LaunchAgent for all users
   jamf-uninstall-ide-bridge.sh                   removes both
   xcode-coding-assistant-off.mobileconfig        test: CodingAssistantAllowExternalIntegrations = false
-  xcode-on-device-models-off.mobileconfig        test: IDEProhibitOnDeviceModelInteraction = true (unverified key)
+  xcode-on-device-models-off.mobileconfig        test: IDEProhibitOnDeviceModelInteraction = true (Predictive Code Completion off)
   slatff-platform-sso.mobileconfig               Platform SSO with the Weblogin SSO extension (step 11),
                                                  only when APPLE_TEAM_ID is set in .env
   slatff-associated-domains.mobileconfig         authsrv:<ID_HOST> fetched directly by the Mac (no Apple CDN)
@@ -148,7 +148,7 @@ echo "SLATFF IDE bridge removed"
                  {"CodingAssistantAllowExternalIntegrations": False})]))
     write_plist("xcode-on-device-models-off.mobileconfig", profile(
         "cloud.slatff.profile.xcode-on-device-models-off", "TEST Xcode on-device models off",
-        "Test profile: IDEProhibitOnDeviceModelInteraction = true (key not in Apple's public docs; effect unverified).",
+        "Test profile: IDEProhibitOnDeviceModelInteraction = true (Apple: prevents Xcode Predictive Code Completion; macOS 15.1).",
         [payload("com.apple.dt.Xcode", "cloud.slatff.payload.xcode-on-device-models-off", "Xcode",
                  {"IDEProhibitOnDeviceModelInteraction": True})]))
 

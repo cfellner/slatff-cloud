@@ -52,7 +52,7 @@ Each user then signs in once:
 | Profile | Key in payload `com.apple.dt.Xcode` | Source |
 |---|---|---|
 | coding assistant off | `CodingAssistantAllowExternalIntegrations` = false | Apple: Xcode docs, Mac restrictions (macOS 26) |
-| on-device models off | `IDEProhibitOnDeviceModelInteraction` = true | not in Apple's public docs; effect to be tested |
+| predictive code completion off | `IDEProhibitOnDeviceModelInteraction` = true | Apple: prevents Xcode Predictive Code Completion; macOS 15.1, not supervised ([restrictions for Mac](https://support.apple.com/guide/deployment/restrictions-for-mac-depba790e53/web)); to be tested |
 
 Record for each: what Xcode shows in Settings > Intelligence, whether the bridge provider still
 works, whether agents (Claude Agent, Codex) still work.

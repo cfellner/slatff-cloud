@@ -90,7 +90,7 @@ Docker 29.9.3 / Compose v5.7.0, macOS 27.3, Apple M5 Max.
 - [ ] `agent install` as user refused while the organisation's agent is installed
 - [ ] Uninstall script removes both
 - [ ] `CodingAssistantAllowExternalIntegrations` false: what Xcode shows, provider, agents
-- [ ] `IDEProhibitOnDeviceModelInteraction` true: effect, if any
+- [ ] `IDEProhibitOnDeviceModelInteraction` true: Predictive Code Completion off (Apple's restrictions page)
 - [ ] Can MDM preset the chat provider or "Allow external agents"? (no documented key yet)
 
 ## Passkeys and DPoP (step 9)
