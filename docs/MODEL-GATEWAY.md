@@ -44,6 +44,10 @@ policy 403; no token 401. Audit shows real users (carol, alice).
 - Labels are text markers. Unlabelled content is not checked.
 - Role changes apply with the next token (5 min default), not instantly.
 - Trusts Keycloak signing keys fetched over HTTPS.
+- A minimal gateway written for this PoC, about 400 lines of Python. Maintained gateways cover
+  the same checks and more: [agentgateway](https://agentgateway.dev) (open source) and
+  [LiteLLM](https://docs.litellm.ai) (SSO and audit logs in its paid Enterprise edition). See
+  [README, Related projects](../README.md#related-projects).
 
 ## Planned: auto-routing (not built)
 

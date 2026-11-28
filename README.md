@@ -112,6 +112,27 @@ Open `https://ai.<domain>`. Sign in as `carol` first (Open WebUI makes the first
 | alice | ai-users | chat |
 | bob | none | refused at sign-in |
 
+## Related projects
+
+The AI access part is not new. Maintained projects cover it:
+
+| Project | What it does | Licence |
+|---|---|---|
+| [agentgateway](https://agentgateway.dev) | Gateway for LLM, MCP and agent-to-agent traffic. Validates Keycloak tokens; RFC 8693 token exchange with an `act` claim for the acting agent | Open source; commercial edition by Solo.io |
+| [Envoy AI Gateway](https://aigateway.envoyproxy.io) | Gateway for generative AI traffic on Envoy, with JWT/OIDC authentication and MCP authorisation rules | Open source |
+| [LiteLLM](https://docs.litellm.ai) | LLM proxy with role-based model access from OIDC tokens | Open source; SSO, audit logs and fine-grained access control in the paid Enterprise edition |
+| [Pomerium](https://www.pomerium.com/docs/capabilities/mcp) | Identity-aware proxy in front of apps, LLM gateways and MCP servers, with Keycloak integration | Open-source core; commercial editions |
+| [Keycloak as MCP authorisation server](https://www.keycloak.org/securing-apps/mcp-authz-server) | Keycloak's own guide for protecting MCP servers | Part of Keycloak |
+| [openDesk](https://www.opendesk.eu) | Sovereign workplace (Nextcloud, video, chat) with Keycloak in Univention Nubus; openDesk Edu adds Open WebUI with Ollama | Open source |
+
+These were reviewed after the gateway here was built. This PoC keeps its own gateway small
+(about 400 lines of Python) so the split is easy to follow: Keycloak decides, the gateway
+enforces and logs. For production, use a maintained gateway. Running agentgateway in front of
+the same Keycloak is planned as step 12.
+
+What this PoC puts together is the Mac (Platform SSO, Apple Business, MDM), the apps and AI
+access under one self-hosted identity provider.
+
 ## Limits
 
 - Keycloak runs `start-dev`. HTTP inside the Docker network.

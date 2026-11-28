@@ -71,3 +71,7 @@ vendored or modified here; SLATFF.Cloud only documents how to obtain and configu
 The ideas, the design decisions and the testing are mine. Claude (Anthropic) wrote the code,
 the scripts and the documentation. Every result marked as tested in [TESTING.md](TESTING.md)
 was run by me on my own setup, with the date.
+
+Existing AI gateways (agentgateway, LiteLLM) were reviewed only after the model gateway and the
+agent steps (3 to 10) were built. They cover the AI access part in maintained software; see
+[README, Related projects](../README.md#related-projects).
