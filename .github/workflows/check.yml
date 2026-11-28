@@ -30,6 +30,15 @@ jobs:
         run: |
           docker compose config -q
           for p in meet files tunnel ollama-container; do docker compose --profile "$p" config -q; done
+      - name: Local mode writes .env, certificates and a valid Compose setup (docs/LOCAL.md)
+        run: |
+          rm -f .env
+          ./scripts/bootstrap.sh --local
+          openssl verify -CAfile local/ca.crt local/tls.crt
+          test ! -e local/ca.key
+          openssl x509 -in local/ca.crt -noout -text | grep -A2 'Name Constraints' | grep -q 'DNS:slatff.test'
+          docker compose config -q
+          docker compose config --services | grep -qx local-ca
       - name: No secrets committed
         run: |
           ! git ls-files | grep -E '(^|/)\.env$'

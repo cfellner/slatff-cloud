@@ -1,0 +1,50 @@
+# Local mode (docs/LOCAL.md): no domain, no Cloudflare. bootstrap.sh --local adds this file
+# to COMPOSE_FILE in .env, so plain "docker compose" commands include it.
+# Caddy serves the certificate from ./local; containers that call Keycloak over HTTPS get a
+# CA bundle with that private CA added.
+services:
+  # Runs once: public CAs plus the local CA in one file, shared through a volume.
+  local-ca:
+    image: caddy:2
+    restart: "no"
+    entrypoint: ["sh", "-c", "cat /etc/ssl/certs/ca-certificates.crt /certs/ca.crt > /bundle/ca-bundle.crt"]
+    volumes:
+      - ./local/ca.crt:/certs/ca.crt:ro
+      - local-ca-bundle:/bundle
+
+  caddy:
+    environment:
+      TLS_MODE: local
+    volumes:
+      - ./local:/certs:ro
+
+  open-webui:
+    depends_on:
+      local-ca:
+        condition: service_completed_successfully
+    environment:
+      SSL_CERT_FILE: /local-ca/ca-bundle.crt
+      REQUESTS_CA_BUNDLE: /local-ca/ca-bundle.crt
+    volumes:
+      - local-ca-bundle:/local-ca:ro
+
+  model-gateway:
+    depends_on:
+      local-ca:
+        condition: service_completed_successfully
+    environment:
+      SSL_CERT_FILE: /local-ca/ca-bundle.crt
+    volumes:
+      - local-ca-bundle:/local-ca:ro
+
+  kb-tool:
+    depends_on:
+      local-ca:
+        condition: service_completed_successfully
+    environment:
+      SSL_CERT_FILE: /local-ca/ca-bundle.crt
+    volumes:
+      - local-ca-bundle:/local-ca:ro
+
+volumes:
+  local-ca-bundle:

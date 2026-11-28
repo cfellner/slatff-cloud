@@ -1,14 +1,19 @@
 # Front door for SLATFF.Cloud. Host names come from .env.
+# TLS_MODE picks the certificate source: "cloudflare" (default, Let's Encrypt through the
+# Cloudflare DNS challenge) or "local" (docs/LOCAL.md, certificate from scripts/local-certs.sh).
 (cloudflare) {
 	tls {
 		dns cloudflare {env.CLOUDFLARE_API_TOKEN}
 		resolvers 1.1.1.1
 	}
 }
+(local) {
+	tls /certs/tls.crt /certs/tls.key
+}
 
 # Identity
 {$ID_HOST} {
-	import cloudflare
+	import {$TLS_MODE:cloudflare}
 	# Requests that arrive through the Cloudflare tunnel carry Cf-Connecting-Ip.
 	# The Keycloak admin console, admin API and the master realm (admin sign-in) stay on the
 	# local network only.
@@ -30,7 +35,7 @@
 
 # AI workspace
 {$AI_HOST} {
-	import cloudflare
+	import {$TLS_MODE:cloudflare}
 	# Model gateway for the IDE bridge (docs/IDE-BRIDGE.md): two paths only.
 	@gateway path /gateway/v1/models /gateway/v1/chat/completions
 	handle @gateway {
@@ -42,7 +47,7 @@
 
 # Meetings (only answers when the "meet" profile is running)
 {$MEET_HOST} {
-	import cloudflare
+	import {$TLS_MODE:cloudflare}
 	handle /oidc/* {
 		reverse_proxy jitsi-adapter:9000
 	}
@@ -53,7 +58,7 @@
 
 # Files, calendar and contacts (only answers when the "files" profile is running)
 {$FILES_HOST} {
-	import cloudflare
+	import {$TLS_MODE:cloudflare}
 	header Strict-Transport-Security "max-age=15552000; includeSubDomains"
 	redir /.well-known/carddav /remote.php/dav/ 301
 	redir /.well-known/caldav /remote.php/dav/ 301

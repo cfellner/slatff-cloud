@@ -20,7 +20,8 @@ Background: [HOW-IT-WORKS.md](HOW-IT-WORKS.md). Verified so far: [TESTING.md](TE
 - Docker with Compose (Mac: Docker Desktop, wait for "Engine running").
 - [Ollama](https://ollama.com) installed natively, default settings. Linux without native Ollama: profile `ollama-container`.
 - git.
-- A domain with DNS at Cloudflare (free plan).
+- A domain with DNS at Cloudflare (free plan). To try it on one machine without a domain,
+  use [LOCAL.md](LOCAL.md) instead of sections 2 and 3.
 - Optional: MDM and Apple Developer membership (Mac sign-in); Cloudflare Zero Trust or a VPN (remote access).
 
 ## 2. Network and DNS

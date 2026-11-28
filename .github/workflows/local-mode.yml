@@ -1,0 +1,85 @@
+# Local mode (docs/LOCAL.md): starts the core with bootstrap.sh --local on a clean runner and
+# checks that every part trusts the local CA. No model is installed, so no chat is tested.
+name: local-mode
+on:
+  push:
+    paths:
+      - docker-compose.yml
+      - docker-compose.local.yml
+      - caddy/**
+      - keycloak/realm-slatff.json
+      - model-gateway/**
+      - kb-tool/**
+      - scripts/bootstrap.sh
+      - scripts/local-certs.sh
+      - scripts/create-demo-user.sh
+      - .env.example
+      - .github/workflows/local-mode.yml
+  pull_request:
+    paths:
+      - docker-compose.yml
+      - docker-compose.local.yml
+      - caddy/**
+      - keycloak/realm-slatff.json
+      - model-gateway/**
+      - kb-tool/**
+      - scripts/bootstrap.sh
+      - scripts/local-certs.sh
+      - scripts/create-demo-user.sh
+      - .env.example
+      - .github/workflows/local-mode.yml
+permissions:
+  contents: read
+jobs:
+  local-stack:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      OIDC: https://id.slatff.test/realms/slatff
+    steps:
+      - uses: actions/checkout@v5
+      - name: Bootstrap local mode
+        run: |
+          ./scripts/bootstrap.sh --local
+          echo '127.0.0.1 id.slatff.test ai.slatff.test meet.slatff.test files.slatff.test' | sudo tee -a /etc/hosts
+      - name: Start the core
+        run: docker compose up -d --build
+      - name: Keycloak answers over HTTPS with the local certificate
+        run: |
+          for i in $(seq 1 60); do
+            curl -fsS -m 5 --cacert local/ca.crt "$OIDC/.well-known/openid-configuration" -o /tmp/oidc.json && break
+            sleep 5
+          done
+          python3 -c "import json; d=json.load(open('/tmp/oidc.json')); assert d['issuer']=='$OIDC', d['issuer']"
+      - name: Without the local CA the certificate is refused
+        run: |
+          ! curl -fsS -m 5 "$OIDC/.well-known/openid-configuration" -o /dev/null
+      - name: Model gateway and kb-tool trust the local CA
+        run: |
+          for s in model-gateway kb-tool; do
+            docker compose exec -T "$s" python -c "import urllib.request as u; print('$s', u.urlopen('$OIDC/protocol/openid-connect/certs', timeout=10).status)"
+          done
+      - name: Demo users can be created
+        run: |
+          openssl rand -hex 12 | ./scripts/create-demo-user.sh alice alice@slatff.test ai-users
+          openssl rand -hex 12 | ./scripts/create-demo-user.sh bob bob@slatff.test none
+      - name: Model gateway refuses a request without a token
+        run: |
+          code=$(curl -s -o /dev/null -w '%{http_code}' --cacert local/ca.crt -X POST \
+            -H 'Content-Type: application/json' -d '{"model":"x","messages":[]}' \
+            https://ai.slatff.test/gateway/v1/chat/completions)
+          echo "status $code"; test "$code" = 401
+      - name: Open WebUI starts sign-in at Keycloak (it trusts the local CA)
+        run: |
+          for i in $(seq 1 120); do
+            curl -fsS -m 5 --cacert local/ca.crt https://ai.slatff.test/health -o /dev/null && break
+            sleep 5
+          done
+          loc=$(curl -s -o /dev/null -w '%{redirect_url}' --cacert local/ca.crt https://ai.slatff.test/oauth/oidc/login)
+          echo "redirect: ${loc%%\?*}"
+          echo "$loc" | grep -q "^$OIDC/protocol/openid-connect/auth"
+      - name: Logs on failure
+        if: failure()
+        run: |
+          docker compose ps -a
+          docker compose logs --tail 60 local-ca caddy keycloak model-gateway kb-tool open-webui

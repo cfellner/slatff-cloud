@@ -12,6 +12,7 @@ Read in this order.
 | [HOW-IT-WORKS.md](HOW-IT-WORKS.md) | Parts and how a request flows |
 | [AI-ACCESS.md](AI-ACCESS.md) | Why Keycloak decides AI access |
 | [NETWORK.md](NETWORK.md) | Host names, DNS, certificates |
+| [LOCAL.md](LOCAL.md) | Local mode: one machine, no domain, own certificate |
 
 ## Parts
 
