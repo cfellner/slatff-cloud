@@ -15,6 +15,16 @@ Docker 29.9.3 / Compose v5.7.0, macOS 27.3, Apple M5 Max.
 - [ ] Names resolve from a second device
 - [ ] Trusted certificate on a phone or tablet
 
+## Local mode
+
+Built 28 Nov 2026 ([LOCAL.md](LOCAL.md)). CI checks the certificates, the Compose files and
+that Keycloak, the gateway, kb-tool and Open WebUI start and trust the local CA.
+
+- [ ] `bootstrap.sh --local`, hosts line, CA trusted in the macOS keychain
+- [ ] Safari and Chrome open `https://ai.slatff.test` without a certificate warning
+- [ ] carol and alice sign in and chat; bob is refused; audit shows both by name
+- [ ] Removal steps leave no CA in the keychain and no hosts line
+
 ## Core
 
 - [x] `bootstrap.sh` writes `.env` (20 Nov 2026)

@@ -15,3 +15,5 @@ __pycache__/
 keycloak/extensions/*/target/
 backups/
 dist/
+# Local mode certificates (scripts/local-certs.sh)
+local/

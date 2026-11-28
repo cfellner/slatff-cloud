@@ -88,7 +88,8 @@ Only what is ticked in [docs/TESTING.md](docs/TESTING.md) counts as working.
 
 - Docker with Compose
 - [Ollama](https://ollama.com) installed natively (Docker on a Mac cannot use the GPU)
-- A domain with DNS at Cloudflare and an API token ([docs/NETWORK.md](docs/NETWORK.md))
+- A domain with DNS at Cloudflare and an API token ([docs/NETWORK.md](docs/NETWORK.md)).
+  Not needed to try it on one machine: see local mode below.
 
 ## Quick start
 
@@ -111,6 +112,16 @@ Open `https://ai.<domain>`. Sign in as `carol` first (Open WebUI makes the first
 | carol | ai-admins | chat and admin settings |
 | alice | ai-users | chat |
 | bob | none | refused at sign-in |
+
+### Local mode, no domain
+
+To try it on one machine without a domain or Cloudflare: names under `slatff.test`, own
+certificate. Steps, limits and how to remove it: [docs/LOCAL.md](docs/LOCAL.md).
+
+```sh
+./scripts/bootstrap.sh --local      # .env, certificate in ./local, prints the two next commands
+docker compose up -d --build
+```
 
 ## Related projects
 
