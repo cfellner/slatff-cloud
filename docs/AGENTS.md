@@ -90,6 +90,9 @@ re-check the permission at the exchange, and the gateway does not check sessions
 - No revocation signal to the gateway (no Shared Signals / CAEP); short token lifetimes limit the window.
 - The agent's identity is a Keycloak client. Not covered: agent registration by the agent itself,
   workload identity (WIMSE, SPIFFE), attestation of where the agent runs.
+- The pattern is not new. [agentgateway](https://agentgateway.dev/docs/kubernetes/latest/security/backend-authn-oauth/)
+  performs the same RFC 8693 delegation with Keycloak (`act` claim for the acting agent) in a
+  maintained open-source gateway.
 
 ## Result, 26 Nov 2026 (Keycloak 26.8.2, alice)
 
